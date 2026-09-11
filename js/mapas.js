@@ -169,7 +169,7 @@ async function gsCargarGeografiaCordoba(mapa, {mostrarTodo = true} = {}) {
     "Gobiernos locales / comunas": capas.gobiernos,
     "Asentamientos / parajes / barrios": capas.asentamientos,
     "Localidades censales": capas.censales
-  }, {collapsed:false, position:"topright"});
+  }, {collapsed:true, position:"topright"});
   control.addTo(mapa);
 
   const host = mapa.getContainer().parentElement;

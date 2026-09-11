@@ -53,9 +53,19 @@
             <label>Contanos qué problema tenés</label>
             <textarea id="s-descripcion" rows="4" placeholder="Ej: se rompió una canilla en la cocina y pierde agua"></textarea>
           </div>
-          <div class="user-type-toggle">
-            <label><input type="radio" name="modalidad" value="ahora"><span>⚡ Necesito ayuda ahora</span></label>
-            <label><input type="radio" name="modalidad" value="presupuesto" checked><span>📋 Quiero recibir presupuestos</span></label>
+          <div class="gs-modalidad-grid" role="radiogroup" aria-label="Modalidad de solicitud">
+            <label class="gs-modalidad-card">
+              <input type="radio" name="modalidad" value="ahora">
+              <span class="gs-modalidad-icon">⚡</span>
+              <span class="gs-modalidad-copy"><strong>Necesito ayuda ahora</strong><small>Buscá un profesional disponible para resolverlo cuanto antes.</small></span>
+              <span class="gs-modalidad-check" aria-hidden="true">✓</span>
+            </label>
+            <label class="gs-modalidad-card selected">
+              <input type="radio" name="modalidad" value="presupuesto" checked>
+              <span class="gs-modalidad-icon">📋</span>
+              <span class="gs-modalidad-copy"><strong>Quiero recibir presupuestos</strong><small>Publicá el trabajo y compará propuestas de profesionales.</small></span>
+              <span class="gs-modalidad-check" aria-hidden="true">✓</span>
+            </label>
           </div>
           <div class="flex-between"><span></span><button class="btn btn-primary" onclick="gsPaso(2)">Continuar</button></div>
         </div>
@@ -93,6 +103,7 @@
             <div class="map-container-wrapper">
               <div id="map-solicitud"></div>
               <div class="map-center-pin">📍</div>
+              <button type="button" class="gs-map-location-btn" id="btn-mi-ubicacion" aria-label="Usar mi ubicación actual" title="Usar mi ubicación actual">⌖</button>
             </div>
           </div>
           <p class="form-hint" style="margin-top: 8px;">* Ajustá el mapa para marcar tu ubicación exacta</p>
@@ -196,6 +207,7 @@ let UBICACION_ACTUAL = null;
   await gsCargarCiudades();
   gsInicializarMapa();
   gsCargarGeografiaCordoba(MAPA);
+  document.getElementById("btn-mi-ubicacion")?.addEventListener("click", gsUsarUbicacionActual);
 })();
 
 function gsPaso(n) {
@@ -248,8 +260,11 @@ async function gsCargarCiudades() {
   const { data } = await supabaseClient.from("ciudades").select("id_ciudad, nombre").order("nombre");
   const sel = document.getElementById("s-ciudad");
   sel.innerHTML = (data || []).map(c => `<option value="${c.id_ciudad}">${gsEscapeHtml(c.nombre)}</option>`).join("");
-  sel.addEventListener("change", gsCargarBarrios);
-  if (data && data.length) gsCargarBarrios();
+  sel.addEventListener("change", async () => {
+    await gsCargarBarrios();
+    await gsCentrarMapaEnCiudad();
+  });
+  if (data && data.length) { await gsCargarBarrios(); await gsCentrarMapaEnCiudad(); }
 }
 
 async function gsCargarBarrios() {
@@ -257,13 +272,38 @@ async function gsCargarBarrios() {
   const { data } = await supabaseClient.from("barrios").select("id_barrio, nombre").eq("id_ciudad", idCiudad).order("nombre");
   const sel = document.getElementById("s-barrio");
   sel.innerHTML = data && data.length
-    ? data.map(b => `<option value="${b.id_barrio}">${gsEscapeHtml(b.nombre)}</option>`).join("")
-    : `<option value="">Sin barrios cargados para esta ciudad</option>`;
+    ? `<option value="">Toda la ciudad / ubicación exacta</option>` + data.map(b => `<option value="${b.id_barrio}">${gsEscapeHtml(b.nombre)}</option>`).join("")
+    : `<option value="">Toda la ciudad / ubicación exacta</option>`;
+  if (!data?.length) gsToast("Esta localidad todavía no tiene barrios cargados. Podés marcar la ubicación exacta en el mapa.", "info");
+}
+
+async function gsCentrarMapaEnCiudad() {
+  if (!MAPA) return;
+  const ciudad = document.getElementById("s-ciudad")?.selectedOptions?.[0]?.textContent?.trim();
+  if (!ciudad || /cargando/i.test(ciudad)) return;
+  try {
+    const r = await fetch(`https://apis.datos.gob.ar/georef/api/v2.0/localidades?provincia=14&nombre=${encodeURIComponent(ciudad)}&max=20`);
+    if (!r.ok) return;
+    const j = await r.json();
+    const exacta = (j.localidades || []).find(x => String(x.nombre || "").toLowerCase() === ciudad.toLowerCase()) || j.localidades?.[0];
+    const lat = Number(exacta?.centroide?.lat), lng = Number(exacta?.centroide?.lon);
+    if (Number.isFinite(lat) && Number.isFinite(lng)) {
+      gsCentrarMapa(MAPA, {lat,lng}, 13);
+      if (!UBICACION_ACTUAL) gsAgregarMarcador(MAPA, {lat,lng,titulo:ciudad,tipo:"cliente"});
+    }
+  } catch (e) { console.warn("No se pudo centrar la ciudad:", e); }
 }
 
 function gsInicializarMapa() {
   MAPA = gsCrearMapa("map-solicitud", { zoom: 8 });
 }
+
+document.querySelectorAll('.gs-modalidad-card').forEach(card => {
+  card.addEventListener('click', () => {
+    document.querySelectorAll('.gs-modalidad-card').forEach(c => c.classList.remove('selected'));
+    card.classList.add('selected');
+  });
+});
 
 document.getElementById("s-cuando").addEventListener("change", (e) => {
   const personalizado = e.target.value === "personalizada";
@@ -336,7 +376,9 @@ async function gsConfirmarSolicitud() {
     const cuando = document.getElementById("s-cuando").value;
     const hoy = new Date();
     if (cuando === "ahora") {
-      fechaProgramada = hoy.toISOString();
+      // Las solicitudes urgentes no tienen fecha programada. Dejar NULL evita
+      // que el reloj del cliente quede unos milisegundos detrás del servidor.
+      fechaProgramada = null;
     } else if (cuando === "hoy") {
       const hora = document.getElementById("s-hora").value || "09:00";
       const [hh, mm] = hora.split(":").map(Number);

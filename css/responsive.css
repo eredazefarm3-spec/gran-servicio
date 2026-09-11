@@ -88,6 +88,18 @@ input, select, textarea {
   border-radius: 8px;
 }
 
+
+/* ──────────────── SOLICITUD: MODALIDAD Y MAPA ──────────────── */
+.gs-modalidad-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:18px 0 22px}
+.gs-modalidad-card{position:relative;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;padding:17px;border:1px solid rgba(111,190,255,.22);border-radius:16px;background:linear-gradient(145deg,#0d4d7d,#082f52);color:#fff;cursor:pointer;transition:.2s ease;min-height:112px}
+.gs-modalidad-card:hover{transform:translateY(-2px);border-color:rgba(255,139,26,.55)}
+.gs-modalidad-card input{position:absolute;opacity:0;pointer-events:none;min-width:0;min-height:0}
+.gs-modalidad-card.selected,.gs-modalidad-card:has(input:checked){border-color:#ff9a2e;box-shadow:0 0 0 2px rgba(255,139,26,.16),0 12px 28px rgba(0,0,0,.18);background:linear-gradient(145deg,#155d91,#0a365b)}
+.gs-modalidad-icon{width:46px;height:46px;display:grid;place-items:center;border-radius:13px;background:rgba(255,139,26,.14);font-size:1.35rem;border:1px solid rgba(255,177,93,.25)}
+.gs-modalidad-copy{display:flex;flex-direction:column;gap:5px}.gs-modalidad-copy strong{font-size:.95rem}.gs-modalidad-copy small{color:#bcd3e4;line-height:1.35}.gs-modalidad-check{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;border:1px solid rgba(255,255,255,.25);color:transparent}.gs-modalidad-card.selected .gs-modalidad-check,.gs-modalidad-card:has(input:checked) .gs-modalidad-check{background:#ff8b1a;border-color:#ff8b1a;color:#fff}
+.gs-map-location-btn{position:absolute;right:12px;bottom:12px;z-index:500;width:46px!important;height:46px!important;min-width:46px!important;min-height:46px!important;border:1px solid rgba(255,255,255,.35);border-radius:12px;background:#0b5d97;color:#fff;font-size:1.3rem;box-shadow:0 8px 20px rgba(0,0,0,.25);cursor:pointer}.gs-map-location-btn:hover{background:#ff8b1a}
+.leaflet-control-layers{border-radius:12px!important;box-shadow:0 8px 24px rgba(0,0,0,.22)!important}.leaflet-control-layers-expanded{padding:9px 11px!important}
+
 /* ──────────────── MAPAS ──────────────── */
 .map-wrap { height: 300px !important; }
 #map-inicio, #mapa-solicitud, #mapa-demanda, #mapa-cobertura {
@@ -168,8 +180,8 @@ input, select, textarea {
 
 /* ──────────────── MODALES ──────────────── */
 .gs-modal { max-width: 100% !important; margin: 0 10px; }
-.gs-modal-overlay { align-items: flex-end !important; padding: 0 !important; }
-.gs-modal { border-bottom-left-radius: 0 !important; border-bottom-right-radius: 0 !important; padding-bottom: 32px !important; }
+.gs-modal-overlay { align-items: center !important; padding: 12px !important; }
+.gs-modal { border-radius: 16px !important; padding: 22px !important; max-height: 92vh; }
 
 /* ──────────────── TOASTS ──────────────── */
 #toast-container {
@@ -274,4 +286,14 @@ input, select, textarea {
   .stat-grid { grid-template-columns: repeat(4, 1fr); }
   .footer-grid { grid-template-columns: repeat(4, 1fr); }
   .gs-carousel-slide img { height: 420px; }
+}
+
+@media(max-width:640px){
+  .gs-modalidad-grid{grid-template-columns:1fr;gap:10px}
+  .gs-modalidad-card{min-height:96px;padding:14px}
+  .gs-modalidad-copy small{font-size:.76rem}
+  .gs-map-location-btn{right:10px;bottom:10px}
+  .gs-dashboard-hero::after{opacity:.78!important}
+  .gs-panel-head{gap:10px;align-items:flex-start}
+  .gs-panel-head>div{min-width:0}
 }

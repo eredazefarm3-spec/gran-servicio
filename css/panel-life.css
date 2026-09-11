@@ -53,6 +53,7 @@ hr{border:0;border-top:1px solid rgba(255,255,255,.08)}
 .stat-card:hover{border-color:rgba(255,139,26,.30)!important}
 /* Modales */
 .modal,.gs-modal-overlay{backdrop-filter:blur(8px)}
+.gs-modal-overlay{position:fixed!important;inset:0!important;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(3,18,32,.72);z-index:10000;box-sizing:border-box}.gs-modal-overlay.open{display:flex!important}.gs-modal{width:min(520px,100%);max-height:min(90vh,760px);overflow:auto;margin:0!important;border-radius:18px!important;padding:28px!important;box-sizing:border-box}
 .modal-content,.gs-modal{background:linear-gradient(145deg,#0a426c,#062a47)!important;border:1px solid rgba(255,139,26,.35)!important;box-shadow:0 25px 80px rgba(0,0,0,.45)!important}
 /* cards genéricas que aparecen en paneles */
 .card,.service-card,.prof-card{box-shadow:0 12px 30px rgba(0,0,0,.14)!important;transition:transform .22s,box-shadow .22s,border-color .22s!important}

@@ -27,8 +27,11 @@
   var prefReducedMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   var idx = 0;
   var timer = null;
+  var inicializado = false;
 
   function gsIniciarCarrusel() {
+    if (inicializado) return;
+    inicializado = true;
     var contenedor = document.getElementById("gs-hero-carousel");
     if (!contenedor) return;
 
@@ -69,7 +72,7 @@
       var dot = document.createElement("button");
       dot.className = "gs-carousel-dot" + (i === 0 ? " active" : "");
       dot.setAttribute("aria-label", "Ir a imagen " + (i+1));
-      dot.addEventListener("click", function() { gsIrA(i); });
+      dot.addEventListener("click", function(e) { e.preventDefault(); e.stopPropagation(); gsIrA(i); }, false);
       dotsBar.appendChild(dot);
     });
     contenedor.appendChild(dotsBar);
@@ -79,13 +82,13 @@
     btnPrev.innerHTML = "&#8249;";
     btnPrev.setAttribute("aria-label", "Imagen anterior");
     btnPrev.style.cssText = "position:absolute;left:10px;top:50%;transform:translateY(-50%);background:rgba(7,31,54,.55);border:none;color:#fff;font-size:1.8rem;width:36px;height:36px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:5;min-height:0";
-    btnPrev.addEventListener("click", function() { gsIrA((idx - 1 + IMAGENES.length) % IMAGENES.length); });
+    btnPrev.addEventListener("click", function(e) { e.preventDefault(); e.stopPropagation(); gsIrA((idx - 1 + IMAGENES.length) % IMAGENES.length); }, false);
 
     var btnNext = document.createElement("button");
     btnNext.innerHTML = "&#8250;";
     btnNext.setAttribute("aria-label", "Imagen siguiente");
     btnNext.style.cssText = "position:absolute;right:10px;top:50%;transform:translateY(-50%);background:rgba(7,31,54,.55);border:none;color:#fff;font-size:1.8rem;width:36px;height:36px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:5;min-height:0";
-    btnNext.addEventListener("click", function() { gsIrA((idx + 1) % IMAGENES.length); });
+    btnNext.addEventListener("click", function(e) { e.preventDefault(); e.stopPropagation(); gsIrA((idx + 1) % IMAGENES.length); }, false);
 
     contenedor.appendChild(btnPrev);
     contenedor.appendChild(btnNext);

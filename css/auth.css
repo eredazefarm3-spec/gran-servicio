@@ -1,0 +1,63 @@
+/* ============================================================
+   GRAN SERVICIO — AUTENTICACIÓN 3.0
+   Una vista por vez: Login o Registro. Panel dividido 50/50.
+   ============================================================ */
+.auth-page{min-height:calc(100vh - 72px);display:grid;place-items:center;padding:34px 20px 54px;background:radial-gradient(circle at 12% 15%,rgba(244,162,92,.15),transparent 27%),radial-gradient(circle at 88% 80%,rgba(76,143,196,.18),transparent 30%),#071f36}
+.auth-shell{width:min(1180px,100%);min-height:720px;position:relative;overflow:hidden;border:1px solid rgba(244,162,92,.42);border-radius:28px;background:#0b2e4f;box-shadow:0 35px 90px rgba(0,0,0,.4),0 0 0 1px rgba(255,255,255,.035);perspective:1800px;isolation:isolate}
+/* El formulario activo ocupa únicamente la mitad derecha. El otro nunca queda visible. */
+.auth-panel{position:absolute;z-index:1;top:0;right:0;width:50%;height:100%;padding:42px clamp(30px,4vw,64px);display:flex;align-items:center;background:linear-gradient(180deg,#14568f,#0b2e4f);opacity:0;visibility:hidden;pointer-events:none;transform:translateX(18px);transition:opacity .28s ease,transform .42s var(--gs-ease),visibility 0s linear .42s}
+.auth-panel-signup{background:linear-gradient(180deg,#123f68,#092744)}
+.auth-shell.show-login .auth-panel-login,.auth-shell.show-signup .auth-panel-signup{opacity:1;visibility:visible;pointer-events:auto;transform:translateX(0);transition-delay:.08s,0s,0s}
+.auth-content{width:min(500px,100%);margin:auto}.auth-brand{display:flex;align-items:center;gap:12px;color:#fff;font-weight:900;letter-spacing:.06em;margin-bottom:20px}.auth-brand .logo-img{width:42px;height:42px;border-radius:50%;object-fit:cover;border:2px solid var(--gs-orange-300);box-shadow:0 0 0 6px rgba(244,162,92,.15);background:#071f36}
+.auth-kicker{display:inline-flex;align-items:center;gap:7px;color:var(--gs-orange-300);font-size:.72rem;font-weight:900;text-transform:uppercase;letter-spacing:.14em;margin-bottom:8px}.auth-kicker::before{content:"";width:24px;height:2px;background:var(--gs-orange-500);border-radius:99px}.auth-panel h1{font-size:clamp(2rem,3.6vw,3rem);letter-spacing:-.045em;margin-bottom:10px}.auth-content>p{color:#cfe0ee;line-height:1.55;margin-bottom:0}.auth-form{margin-top:20px}.auth-form .form-group{margin-bottom:13px}.auth-form label{color:#f7fbff;font-size:.8rem;font-weight:800;display:block;margin-bottom:7px}.auth-form input,.auth-form select{width:100%;min-height:50px;background:rgba(7,31,54,.62)!important;border:1px solid rgba(255,255,255,.2)!important;border-radius:11px;color:#fff!important;box-sizing:border-box}.auth-form input:focus,.auth-form select:focus{border-color:var(--gs-orange-300)!important;box-shadow:0 0 0 4px rgba(244,162,92,.13)!important;outline:none}.auth-form input::placeholder{color:#9fb4c5!important}.auth-password-wrap{position:relative}.auth-password-wrap input{padding-right:76px}.password-toggle{position:absolute;right:7px;top:50%;transform:translateY(-50%);border:0;border-radius:8px;background:rgba(244,162,92,.1);color:var(--gs-orange-300);padding:7px 9px;font-weight:900;cursor:pointer}.auth-helper{display:flex;justify-content:space-between;gap:12px;margin:8px 0 14px;font-size:.76rem;color:#9fb4c5}.auth-submit{width:100%;min-height:52px;margin-top:4px;border:0;border-radius:11px;background:linear-gradient(135deg,var(--gs-orange-300),var(--gs-orange-500));color:#fff;font-weight:900;letter-spacing:.01em;cursor:pointer;box-shadow:0 12px 28px rgba(224,122,44,.25);transition:transform .2s var(--gs-ease),box-shadow .2s var(--gs-ease),filter .2s ease}.auth-submit:hover{transform:translateY(-2px);box-shadow:0 17px 34px rgba(224,122,44,.34);filter:saturate(1.1)}.auth-submit:disabled{opacity:.65;cursor:wait;transform:none}.auth-switch{margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,.12);text-align:center;color:#bfd0de;font-size:.84rem}.auth-switch button,.auth-link{border:0;background:none;color:var(--gs-orange-300);font:inherit;font-weight:900;cursor:pointer}.auth-switch button:hover,.auth-link:hover{color:#fff}.auth-security{display:flex;gap:8px;align-items:center;margin-top:13px;color:#a9bdcd;font-size:.72rem}.auth-security span{width:7px;height:7px;border-radius:50%;background:var(--gs-orange-300)}
+/* Panel visual izquierdo: permanece en su lugar y cambia de cara con un giro 3D. */
+.auth-overlay{position:absolute;z-index:4;inset:0 auto 0 0;width:50%;transform:rotateY(0);transform-origin:center;transform-style:preserve-3d;backface-visibility:hidden;will-change:transform;transition:transform .86s cubic-bezier(.2,.75,.25,1);pointer-events:none}
+.auth-shell.show-signup .auth-overlay{transform:rotateY(180deg)}
+.auth-overlay-face{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;padding:44px clamp(28px,4vw,62px);overflow:hidden;color:#fff;background:linear-gradient(145deg,#0b2e4f 0%,#14568f 52%,#0b2e4f 100%);border-right:1px solid rgba(244,162,92,.34);backface-visibility:hidden}
+.auth-overlay-face::before{content:"";position:absolute;width:420px;height:420px;right:-210px;top:-150px;border-radius:50%;background:radial-gradient(circle,rgba(244,162,92,.28),rgba(224,122,44,.04) 58%,transparent 60%)}.auth-overlay-face::after{content:"";position:absolute;width:250px;height:250px;left:-130px;bottom:-120px;border-radius:50%;border:55px solid rgba(76,143,196,.2)}.auth-overlay-face.signup-face{transform:rotateY(180deg)}
+.auth-overlay-content{position:relative;z-index:2;max-width:470px}.auth-illustration{width:96px;height:96px;border-radius:50%;display:grid;place-items:center;margin-bottom:24px;background:var(--gs-blue-950);border:3px solid var(--gs-orange-300);box-shadow:0 18px 40px rgba(0,0,0,.35);overflow:hidden}.auth-illustration img{width:100%;height:100%;object-fit:cover;display:block}.auth-overlay-face h2{font-size:clamp(1.8rem,3.1vw,2.75rem);line-height:1.08;letter-spacing:-.04em;margin-bottom:14px}.auth-overlay-face p{color:#d8e7f3;max-width:450px;line-height:1.55}.auth-benefits{list-style:none;padding:0;margin:23px 0 0}.auth-benefits li{display:flex;align-items:flex-start;gap:11px;margin:12px 0;color:#fff}.auth-benefits .check{flex:0 0 25px;width:25px;height:25px;border-radius:50%;display:grid;place-items:center;background:var(--gs-orange-500);font-weight:900}.auth-mini{margin-top:24px;color:var(--gs-orange-300)!important;font-size:.78rem!important;font-weight:800}
+.account-types{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:17px 0 12px}.account-type{position:relative;display:block;padding:14px;border:1px solid rgba(255,255,255,.16);border-radius:13px;background:rgba(7,31,54,.4);cursor:pointer;transition:.2s var(--gs-ease)}.account-type:hover{transform:translateY(-2px);border-color:rgba(244,162,92,.55)}.account-type input{position:absolute;opacity:0;pointer-events:none}.account-type .type-icon{width:38px;height:38px;display:grid;place-items:center;border-radius:11px;background:rgba(244,162,92,.12);font-size:1.15rem;margin-bottom:8px}.account-type strong{display:block;color:#fff;margin-bottom:3px;font-size:.88rem}.account-type small{display:block;color:#a9bdcd;line-height:1.35;font-size:.72rem}.account-type:has(input:checked){border-color:var(--gs-orange-300);background:linear-gradient(145deg,rgba(224,122,44,.16),rgba(7,31,54,.5));box-shadow:inset 0 0 0 1px rgba(244,162,92,.35),0 0 0 3px rgba(244,162,92,.07)}
+.role-hint{display:flex;gap:9px;align-items:flex-start;padding:9px 11px;margin-bottom:12px;border:1px dashed rgba(244,162,92,.35);border-radius:10px;background:rgba(224,122,44,.06);color:#cfe0ee;font-size:.74rem;line-height:1.4}.role-hint strong{color:#fff}.professional-fields{display:none}.auth-shell[data-type="profesional"] .professional-fields{display:block}.terms-check{display:flex;gap:8px;align-items:flex-start;margin:11px 0;color:#a9bdcd;font-size:.72rem;line-height:1.35}.terms-check input{width:16px!important;min-height:16px!important;margin-top:1px;accent-color:var(--gs-orange-500)}.terms-check a{color:var(--gs-orange-300);font-weight:800}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:900px){.auth-page{padding:20px 14px 35px}.auth-shell{min-height:700px}.auth-overlay{width:43%}.auth-panel{width:57%;padding:38px 28px}.auth-overlay-face{padding:36px 28px}.auth-overlay-face h2{font-size:2rem}.auth-benefits li{font-size:.85rem}}
+@media(max-width:720px){.auth-page{display:block;padding:0;background:#071f36}.auth-shell{width:100%;min-height:calc(100vh - 64px);border-radius:0;border-left:0;border-right:0}.auth-overlay{display:none}.auth-panel{position:absolute;inset:0;width:100%;height:100%;padding:34px 22px;transform:none!important}.auth-shell.show-login .auth-panel-login,.auth-shell.show-signup .auth-panel-signup{transform:none}.auth-content{max-width:560px}.auth-panel h1{font-size:2.2rem}.account-types{grid-template-columns:1fr 1fr}.form-row{grid-template-columns:1fr 1fr}}
+@media(max-width:480px){.auth-panel{padding:28px 18px}.account-types{grid-template-columns:1fr}.form-row{grid-template-columns:1fr}.auth-helper{flex-direction:column;gap:5px}.auth-switch{font-size:.82rem}}
+@media(prefers-reduced-motion:reduce){.auth-overlay,.auth-panel{transition:none!important}}
+
+/* ============================================================
+   CORRECCIÓN DEFINITIVA — SCROLL DEL REGISTRO
+   El formulario puede crecer sin quedar recortado por el shell.
+   ============================================================ */
+.auth-shell{
+  height:min(820px, calc(100vh - 110px));
+  min-height:0;
+}
+.auth-panel{
+  box-sizing:border-box;
+  overflow-y:auto;
+  overflow-x:hidden;
+  scrollbar-width:thin;
+  scrollbar-color:var(--gs-orange-500) rgba(255,255,255,.08);
+  align-items:flex-start;
+  -webkit-overflow-scrolling:touch;
+}
+.auth-panel::-webkit-scrollbar{width:8px}
+.auth-panel::-webkit-scrollbar-track{background:rgba(255,255,255,.05);border-radius:99px}
+.auth-panel::-webkit-scrollbar-thumb{background:var(--gs-orange-500);border-radius:99px;border:2px solid transparent;background-clip:padding-box}
+.auth-content{margin:auto;padding-bottom:42px;box-sizing:border-box}
+.auth-panel-signup .auth-content{padding-top:4px}
+
+@media(max-width:720px){
+  .auth-shell{
+    height:calc(100vh - 64px);
+    min-height:calc(100vh - 64px);
+    max-height:none;
+  }
+  .auth-panel{
+    height:100%;
+    min-height:0;
+    overflow-y:auto;
+    align-items:flex-start;
+  }
+  .auth-content{margin:0 auto;padding-bottom:48px}
+}

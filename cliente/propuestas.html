@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Propuestas recibidas — Gran Servicio</title>
+<link rel="stylesheet" href="../css/style.css"><link rel="stylesheet" href="../css/gs-polish.css">
+<link rel="stylesheet" href="../css/dashboard.css"><link rel="stylesheet" href="../css/dashboard-v2.css">
+<link rel="stylesheet" href="../css/panel-life.css"><link rel="stylesheet" href="../css/responsive.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<link rel="stylesheet" href="../css/life.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar">
+    <a href="../index.html" class="logo"><img src="../img/logo.png" alt="Gran Servicio" class="logo-img"><span>GRAN SERVICIO</span></a>
+    <ul class="sidebar-nav"><li><a href="dashboard.html">Dashboard</a></li><li><a href="solicitudes.html">Mis solicitudes</a></li><li><a href="crear-solicitud.html">Solicitar servicio</a></li><li><a href="presupuesto.html">Presupuestos</a></li><li><a href="propuestas.html" class="active">Propuestas</a></li><li><a href="pagos.html">Pagos</a></li><li><a href="resenas.html">Reseñas</a></li><li><a href="reclamos.html">Reclamos</a></li><li><a href="mensajes.html">Mensajes</a></li><li><a href="notificaciones.html">Notificaciones</a></li><li><a href="perfil.html">Mi perfil</a></li></ul>
+    <div class="sidebar-foot"><button class="btn btn-ghost btn-sm" style="color:#CFE0EE" onclick="gsLogout()">Cerrar sesión</button></div>
+  </aside>
+  <main class="app-main">
+    <div class="topbar">
+      <button class="hamburger-menu btn btn-outline btn-sm" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+      <div></div><div class="topbar-user"><span id="nombre-usuario"></span><div class="avatar" id="avatar-usuario">--</div></div>
+    </div>
+    <div class="main-content">
+      <h2>Propuestas recibidas</h2>
+      <div id="contenido-pagina" class="panel"><div class="loading-state"><div class="spinner"></div>Cargando…</div></div>
+    </div>
+  </main>
+</div>
+<script src="../js/supabase.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/realtime.js"></script>
+<script>
+(async () => {
+  const sesion = await gsProtegerPagina("cliente");
+  if (!sesion) return;
+  document.getElementById("nombre-usuario").textContent = sesion.perfil.nombre + " " + sesion.perfil.apellido;
+  document.getElementById("avatar-usuario").textContent = (sesion.perfil.nombre[0] + (sesion.perfil.apellido[0]||"")).toUpperCase();
+  window.SESION = sesion;
+  window.dispatchEvent(new Event("gs-sesion-lista"));
+})();
+</script>
+<script>
+window.addEventListener("gs-sesion-lista", async () => {
+  const { perfil } = window.SESION;
+  const { data: solicitudes } = await supabaseClient.from("solicitud_servicio").select("id_solicitud, descripcion").eq("id_cliente", perfil.id_cliente);
+  const ids = (solicitudes||[]).map(s=>s.id_solicitud);
+  const cont = document.getElementById("contenido-pagina");
+  if (!ids.length) { cont.innerHTML = '<div class="empty-state">Todavía no tenés solicitudes con propuestas.</div>'; return; }
+
+  const { data: propuestas } = await supabaseClient
+    .from("propuestas_profesional")
+    .select("id_propuesta, monto, mensaje, fecha_propuesta, id_solicitud, id_estado, usuario_profesional(nombre, apellido, calificacion_promedio), estados(nombre)")
+    .in("id_solicitud", ids)
+    .order("fecha_propuesta", { ascending: false });
+
+  cont.innerHTML = (propuestas && propuestas.length) ? propuestas.map(p => `
+    <div class="list-row">
+      <div>
+        <strong>${gsEscapeHtml(p.usuario_profesional?.nombre)} ${gsEscapeHtml(p.usuario_profesional?.apellido)}</strong>
+        <p class="muted" style="margin:2px 0">★ ${p.usuario_profesional?.calificacion_promedio ?? "—"} · ${gsEscapeHtml(p.mensaje || "")}</p>
+      </div>
+      <div style="text-align:right">
+        <div><strong>$${p.monto}</strong></div>
+        <button class="btn btn-primary btn-sm" onclick="gsAceptarPropuesta('${p.id_propuesta}','${p.id_solicitud}')">Aceptar</button>
+        <button class="btn btn-outline btn-sm" onclick="gsRechazarPropuesta('${p.id_propuesta}')">Rechazar</button>
+      </div>
+    </div>`).join("") : '<div class="empty-state">Todavía no recibiste propuestas.</div>';
+});
+
+async function gsAceptarPropuesta(idPropuesta, idSolicitud) {
+  if (!confirm("¿Aceptar esta propuesta? Se asignará el trabajo al profesional y se generará la transacción correspondiente.")) return;
+  const { data, error } = await supabaseClient.rpc("aceptar_propuesta", { p_id_propuesta: Number(idPropuesta) });
+  if (error) { gsToast("No pudimos aceptar la propuesta: " + error.message, "error"); return; }
+  gsToast("Propuesta aceptada. El profesional fue notificado y la transacción quedó preparada para el pago.", "success");
+  setTimeout(() => window.location.reload(), 900);
+}
+
+async function gsRechazarPropuesta(idPropuesta) {
+  if (!confirm("¿Rechazar esta propuesta?")) return;
+  const { error } = await supabaseClient.rpc("cliente_rechazar_propuesta", { p_id_propuesta: Number(idPropuesta) });
+  if (error) { gsToast("No pudimos rechazar la propuesta: " + error.message, "error"); return; }
+  gsToast("Propuesta rechazada.", "info");
+  setTimeout(()=>window.location.reload(), 700);
+}
+</script>
+<script src="../js/panel-life.js"></script><script src="../js/life.js"></script>
+</body></html>

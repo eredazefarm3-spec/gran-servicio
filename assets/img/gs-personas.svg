@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 620" role="img" aria-label="Personas conectadas con profesionales">
+<defs><linearGradient id="bg" x1="0" x2="1"><stop stop-color="#0B2E4F"/><stop offset="1" stop-color="#14568F"/></linearGradient><linearGradient id="or" x1="0" x2="1"><stop stop-color="#B44A11"/><stop offset="1" stop-color="#F4A25C"/></linearGradient></defs>
+<rect width="900" height="620" rx="44" fill="url(#bg)"/>
+<circle cx="690" cy="135" r="94" fill="#E07A2C" opacity=".22"/><circle cx="180" cy="500" r="150" fill="#F4A25C" opacity=".16"/>
+<path d="M215 405c25-102 103-152 175-152s150 50 175 152v88H215z" fill="#F4A25C"/><circle cx="390" cy="190" r="92" fill="#F4A25C"/>
+<path d="M310 165c15-74 149-92 176 10-38-31-111-33-176-10z" fill="#0B2E4F"/>
+<path d="M500 455c17-82 78-120 135-120s118 38 135 120v58H500z" fill="#E07A2C"/><circle cx="635" cy="285" r="70" fill="#F4A25C"/>
+<path d="M565 270c17-63 105-69 142-9-37-21-83-20-142 9z" fill="#0B2E4F"/>
+<path d="M530 380c64 34 119 35 179 0" fill="none" stroke="#fff" stroke-width="12" stroke-linecap="round" opacity=".9"/>
+<path d="M90 120h190M90 155h125" stroke="#fff" stroke-width="12" stroke-linecap="round" opacity=".8"/>
+<circle cx="735" cy="470" r="62" fill="#14568F" stroke="#fff" stroke-width="8"/><path d="M705 470l22 22 40-48" fill="none" stroke="#fff" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

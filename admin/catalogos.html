@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Catálogos — Gran Servicio</title>
+<link rel="stylesheet" href="../css/style.css"><link rel="stylesheet" href="../css/gs-polish.css">
+<link rel="stylesheet" href="../css/dashboard.css"><link rel="stylesheet" href="../css/dashboard-v2.css">
+<link rel="stylesheet" href="../css/panel-life.css"><link rel="stylesheet" href="../css/responsive.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<link rel="stylesheet" href="../css/life.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar">
+    <a href="../index.html" class="logo"><img src="../img/logo.png" alt="Gran Servicio" class="logo-img"><span>GRAN SERVICIO</span></a>
+    <ul class="sidebar-nav"><li><a href="dashboard.html">Dashboard</a></li><li><a href="clientes.html">Clientes</a></li><li><a href="profesionales.html">Profesionales</a></li><li><a href="empleados.html">Empleados</a></li><li><a href="solicitudes.html">Solicitudes</a></li><li><a href="propuestas.html">Propuestas</a></li><li><a href="asignaciones.html">Asignaciones</a></li><li><a href="pagos.html">Pagos</a></li><li><a href="transacciones.html">Transacciones</a></li><li><a href="facturas.html">Facturas</a></li><li><a href="comisiones.html">Comisiones</a></li><li><a href="reclamos.html">Reclamos</a></li><li><a href="soporte.html">Soporte</a></li><li><a href="suscripciones.html">Suscripciones</a></li><li><a href="geografia.html">Geografía</a></li><li><a href="catalogos.html" class="active">Catálogos</a></li></ul>
+    <div class="sidebar-foot"><button class="btn btn-ghost btn-sm" style="color:#CFE0EE" onclick="gsLogout()">Cerrar sesión</button></div>
+  </aside>
+  <main class="app-main">
+    <div class="topbar">
+      <button class="hamburger-menu btn btn-outline btn-sm" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+      <div></div><div class="topbar-user"><span id="nombre-usuario"></span><div class="avatar" id="avatar-usuario">--</div></div>
+    </div>
+    <div class="main-content">
+      <div class="flex-between"><div><h2>Catálogos</h2><p class="muted">Servicios, categorías y catálogos auxiliares. La sincronización geográfica se gestiona exclusivamente desde <a href="geografia.html">Geografía</a>.</p></div></div>
+      <div id="contenido-pagina" class="panel"><div class="loading-state"><div class="spinner"></div>Cargando…</div></div>
+    </div>
+  </main>
+</div>
+<script src="../js/supabase.js"></script>
+<script src="../js/auth.js"></script>
+<script>
+(async () => {
+  const sesion = await gsProtegerPagina("empleado");
+  if (!sesion) return;
+  document.getElementById("nombre-usuario").textContent = sesion.perfil.nombre + " " + sesion.perfil.apellido;
+  document.getElementById("avatar-usuario").textContent = (sesion.perfil.nombre[0] + (sesion.perfil.apellido[0]||"")).toUpperCase();
+  window.SESION = sesion;
+  window.dispatchEvent(new Event("gs-sesion-lista"));
+})();
+</script>
+<script>
+window.addEventListener("gs-sesion-lista", async () => {
+  const [{data: categorias}, {data: servicios}, {data: ciudades}, {data: barrios}, {count: lugaresCount}] = await Promise.all([
+    supabaseClient.from("categorias_servicio").select("nombre, activo"),
+    supabaseClient.from("servicios").select("nombre, tarifa_referencial, activo, categorias_servicio(nombre)"),
+    supabaseClient.from("ciudades").select("nombre"),
+    supabaseClient.from("barrios").select("nombre, ciudades(nombre)"),
+    supabaseClient.from("lugares_geograficos").select("id_lugar", {count:"exact",head:true}),
+  ]);
+  document.getElementById("contenido-pagina").innerHTML = `
+    <div class="panel" style="margin-bottom:20px">
+      <h3>Cobertura geográfica</h3>
+      <p>La aplicación usa GeoRef Argentina para mantener un catálogo de localidades, municipios, gobiernos locales, asentamientos, parajes y localidades censales de Córdoba.</p>
+      <strong>Registros geográficos sincronizados: ${lugaresCount ?? 0}</strong>
+    </div>
+    <div class="grid-2">
+      <div>
+        <h3>Categorías y servicios</h3>
+        ${(categorias||[]).map(c => `<p><strong>${gsEscapeHtml(c.nombre)}</strong></p>`).join("")}
+        <table><thead><tr><th>Servicio</th><th>Categoría</th><th>Tarifa ref.</th></tr></thead><tbody>
+        ${(servicios||[]).map(s=>`<tr><td>${gsEscapeHtml(s.nombre)}</td><td>${gsEscapeHtml(s.categorias_servicio?.nombre||"—")}</td><td>$${s.tarifa_referencial||"—"}</td></tr>`).join("")}
+        </tbody></table>
+      </div>
+      <div>
+        <h3>Ciudades (${(ciudades||[]).length})</h3>
+        <p class="muted">${gsEscapeHtml((ciudades||[]).map(c=>c.nombre).join(" · "))}</p>
+        <h3 style="margin-top:16px">Barrios cargados (${(barrios||[]).length})</h3>
+        <p class="muted">${gsEscapeHtml((barrios||[]).map(b=>b.nombre+" ("+(b.ciudades?.nombre||"")+")").join(" · ") || "Todavía no hay barrios cargados. Agregalos desde el SQL Editor de Supabase o una futura pantalla de carga.")}</p>
+      </div>
+    </div>`;
+});
+
+</script>
+<script src="../js/panel-life.js"></script><script src="../js/life.js"></script>
+</body></html>

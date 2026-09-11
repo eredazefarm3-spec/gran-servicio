@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0B2E4F">
+<title>Ingresar o crear cuenta — Gran Servicio</title>
+<link rel="stylesheet" href="css/style.css"><link rel="stylesheet" href="css/responsive.css"><link rel="stylesheet" href="css/auth.css"><link rel="stylesheet" href="css/gs-polish.css"><link rel="stylesheet" href="css/life.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+</head>
+<body>
+<nav class="navbar"><div class="container navbar-inner">
+  <a href="/index.html" class="logo"><img src="/img/logo.png" alt="Gran Servicio" class="logo-img"><span>GRAN SERVICIO</span></a>
+  <div class="nav-actions"><a href="/index.html" class="btn btn-outline btn-sm">Volver al inicio</a></div>
+</div></nav>
+<main class="auth-page">
+<section id="auth-shell" class="auth-shell show-login" data-mode="login" data-type="cliente" aria-label="Autenticación de Gran Servicio">
+  <div class="auth-panel auth-panel-login">
+    <div class="auth-content">
+      <div class="auth-brand"><img src="/img/logo.png" alt="Gran Servicio" class="logo-img"><span>GRAN SERVICIO</span></div>
+      <div class="auth-kicker">Tu cuenta</div>
+      <h1>Bienvenido de nuevo</h1>
+      <p>Ingresá para gestionar tus solicitudes, propuestas, mensajes y servicios.</p>
+      <form id="form-login" class="auth-form">
+        <div class="form-group"><label for="login-email">Correo electrónico</label><input type="email" id="login-email" placeholder="tu@correo.com" autocomplete="email" required></div>
+        <div class="form-group"><label for="login-password">Contraseña</label><div class="auth-password-wrap"><input type="password" id="login-password" placeholder="Ingresá tu contraseña" autocomplete="current-password" required><button type="button" class="password-toggle" data-target="login-password">Mostrar</button></div></div>
+        <div class="auth-helper"><span>Acceso seguro a tu cuenta</span><a href="#" id="recover-link" class="auth-link">¿Olvidaste tu contraseña?</a></div>
+        <button type="submit" class="auth-submit" id="login-submit">Ingresar a mi cuenta</button>
+      </form>
+      <div class="auth-switch">¿Todavía no tenés cuenta? <button type="button" data-auth-switch="signup">Crear una cuenta</button></div>
+      <div class="auth-security"><span></span> Tus datos se gestionan mediante autenticación segura.</div>
+    </div>
+  </div>
+
+  <div class="auth-panel auth-panel-signup">
+    <div class="auth-content">
+      <div class="auth-brand"><img src="/img/logo.png" alt="Gran Servicio" class="logo-img"><span>GRAN SERVICIO</span></div>
+      <div class="auth-kicker">Empezá hoy</div>
+      <h1>Creá tu cuenta</h1>
+      <p>Elegí el camino que mejor se adapta a vos.</p>
+      <div class="account-types" role="radiogroup" aria-label="Tipo de cuenta">
+        <label class="account-type"><input type="radio" name="tipo" value="cliente" checked><span class="type-icon">🏠</span><strong>Soy cliente</strong><small>Necesito contratar un servicio.</small></label>
+        <label class="account-type"><input type="radio" name="tipo" value="profesional"><span class="type-icon">🛠️</span><strong>Soy profesional</strong><small>Quiero ofrecer mis servicios.</small></label>
+      </div>
+      <div id="role-hint" class="role-hint"><span>💡</span><div><strong>Como cliente:</strong> publicás una necesidad, recibís propuestas y elegís.</div></div>
+      <form id="form-registro" class="auth-form">
+        <div class="form-row"><div class="form-group"><label for="reg-nombre">Nombre</label><input type="text" id="reg-nombre" autocomplete="given-name" required></div><div class="form-group"><label for="reg-apellido">Apellido</label><input type="text" id="reg-apellido" autocomplete="family-name" required></div></div>
+        <div class="form-group"><label for="reg-email">Correo electrónico</label><input type="email" id="reg-email" placeholder="tu@correo.com" autocomplete="email" required></div>
+        <div class="form-group"><label for="reg-telefono">Teléfono <span style="font-weight:400;color:#9fb4c5">(opcional)</span></label><input type="tel" id="reg-telefono" placeholder="351 123 4567" autocomplete="tel"></div>
+        <div class="professional-fields">
+          <div class="form-group"><label for="reg-rubro">Rubro profesional</label><select id="reg-rubro"><option value="">Seleccioná tu rubro</option></select></div>
+          <div class="form-row">
+            <div class="form-group"><label for="reg-cuit">CUIT</label><input type="text" id="reg-cuit" placeholder="11 dígitos" pattern="\d{11}" title="Debe contener 11 números sin guiones"></div>
+            <div class="form-group"><label for="reg-dni">DNI</label><input type="text" id="reg-dni" placeholder="7 u 8 dígitos" pattern="\d{7,8}" title="Debe contener 7 u 8 números sin puntos"></div>
+          </div>
+          <div class="form-group" style="padding:12px 14px;border:1px solid rgba(255,139,26,.25);border-radius:10px;background:rgba(255,139,26,.06)"><strong style="display:block;margin-bottom:5px;color:#fff">📋 Verificación profesional</strong><small style="color:#9fb4c5;line-height:1.5">Primero confirmá tu correo. Después podrás subir tu título o certificado para que administración revise tu solicitud. Confirmar el correo no habilita el panel profesional.</small></div>
+        </div>
+        <div class="form-group"><label for="reg-password">Contraseña</label><div class="auth-password-wrap"><input type="password" id="reg-password" minlength="6" placeholder="Mínimo 6 caracteres" autocomplete="new-password" required><button type="button" class="password-toggle" data-target="reg-password">Mostrar</button></div></div>
+        <label class="terms-check"><input type="checkbox" id="reg-terms" required><span>Acepto los <a href="/terminos.html" target="_blank" rel="noopener">Términos y condiciones</a> y la <a href="/privacidad.html" target="_blank" rel="noopener">Política de privacidad</a>.</span></label>
+        <button type="submit" class="auth-submit" id="register-submit">Crear mi cuenta</button>
+      </form>
+      <div class="auth-switch">¿Ya tenés una cuenta? <button type="button" data-auth-switch="login">Iniciar sesión</button></div>
+    </div>
+  </div>
+
+  <div class="auth-overlay" aria-hidden="true">
+    <div class="auth-overlay-face login-face"><div class="auth-overlay-content">
+      <div class="auth-illustration"><img src="/img/logo.png" alt="Gran Servicio Mascota"></div><div class="auth-kicker">Una plataforma, dos caminos</div><h2>Resolvé lo que necesitás. Hacé crecer tu trabajo.</h2>
+      <p>Gran Servicio conecta personas que necesitan ayuda con profesionales que están listos para trabajar.</p>
+      <ul class="auth-benefits"><li><span class="check">✓</span><span>Compará propuestas antes de elegir.</span></li><li><span class="check">✓</span><span>Encontrá profesionales por zona y rubro.</span></li><li><span class="check">✓</span><span>Seguimiento de solicitudes, mensajes y pagos.</span></li></ul><p class="auth-mini">Azul para conectar · Naranja para avanzar</p>
+    </div></div>
+    <div class="auth-overlay-face signup-face"><div class="auth-overlay-content">
+      <div class="auth-illustration"><img src="/img/logo.png" alt="Gran Servicio Mascota"></div><div class="auth-kicker">Elegí tu experiencia</div><h2>Tu cuenta empieza acá.</h2>
+      <p>Podés registrarte como <strong>cliente</strong> o como <strong>profesional</strong>. Después vas a encontrar un panel preparado para tu objetivo.</p>
+      <ul class="auth-benefits"><li><span class="check">✓</span><span>Perfil y herramientas según tu rol.</span></li><li><span class="check">✓</span><span>Experiencia simple desde cualquier dispositivo.</span></li><li><span class="check">✓</span><span>Todo el ecosistema de Gran Servicio en un solo lugar.</span></li></ul><p class="auth-mini">Elegí tu camino y empezá.</p>
+    </div></div>
+  </div>
+</section>
+</main>
+<script src="js/supabase.js"></script><script src="js/auth.js"></script>
+<script>
+(function(){
+ const shell=document.getElementById('auth-shell'), params=new URLSearchParams(location.search), next=params.get('next'), modo=params.get('modo'), tipoParam=params.get('tipo');
+ const rubroSelect=document.getElementById('reg-rubro'), hint=document.getElementById('role-hint');
+ function setMode(mode,animate=true){shell.classList.remove('show-login','show-signup');shell.classList.add(mode==='signup'?'show-signup':'show-login');shell.dataset.mode=mode;if(animate){shell.classList.add('is-animating');setTimeout(()=>shell.classList.remove('is-animating'),900)}const q=new URLSearchParams();if(mode==='signup')q.set('modo','registro');if(shell.dataset.type)q.set('tipo',shell.dataset.type);if(next)q.set('next',next);history.replaceState(null,'',location.pathname+(q.toString()?'?'+q:''))}
+ document.querySelectorAll('[data-auth-switch]').forEach(b=>b.addEventListener('click',()=>setMode(b.dataset.authSwitch)));
+ document.querySelectorAll('.password-toggle').forEach(b=>b.addEventListener('click',()=>{const i=document.getElementById(b.dataset.target),v=i.type==='text';i.type=v?'password':'text';b.textContent=v?'Mostrar':'Ocultar'}));
+ document.querySelectorAll('input[name="tipo"]').forEach(r=>r.addEventListener('change',()=>{shell.dataset.type=r.value;hint.innerHTML=r.value==='profesional'?'<span>💡</span><div><strong>Como profesional:</strong> completás tu perfil y después configurás servicios, disponibilidad y cobertura.</div>':'<span>💡</span><div><strong>Como cliente:</strong> publicás una necesidad, recibís propuestas y elegís.</div>';}));
+ async function cargarRubros(){if(!supabaseClient)return;const {data}=await supabaseClient.from('rubros').select('id_rubro,nombre').eq('activo',true).order('nombre');(data||[]).forEach(r=>{const o=document.createElement('option');o.value=r.id_rubro;o.textContent=r.nombre;rubroSelect.appendChild(o)})} cargarRubros();
+ if(tipoParam==='profesional'){const r=document.querySelector('input[name="tipo"][value="profesional"]');r.checked=true;shell.dataset.type='profesional';hint.innerHTML='<span>💡</span><div><strong>Como profesional:</strong> completás tu perfil y después configurás servicios, disponibilidad y cobertura.</div>'} if(modo==='registro')setMode('signup',false);
+ document.getElementById('form-login').addEventListener('submit',async e=>{e.preventDefault();const btn=document.getElementById('login-submit');btn.disabled=true;btn.textContent='Ingresando…';try{const email=document.getElementById('login-email').value.trim(),password=document.getElementById('login-password').value;if(!gsRequireSupabase())return;const {data,error}=await supabaseClient.auth.signInWithPassword({email,password});if(error){gsToast(/email not confirmed/i.test(error.message)?'Tu correo todavía no está confirmado. Revisá tu bandeja de entrada.':'Correo o contraseña incorrectos.','error');return}if(next)location.href=next;else await gsRedirigirSegunTipo(data.user.id)}finally{btn.disabled=false;btn.textContent='Ingresar a mi cuenta'}});
+ document.getElementById('recover-link').addEventListener('click',e=>{e.preventDefault();const email=prompt('Ingresá tu correo para recibir el enlace de recuperación:');if(email)gsRecuperarPassword(email.trim())});
+ document.getElementById('form-registro').addEventListener('submit',async e=>{
+   e.preventDefault();
+   const tipo=document.querySelector('input[name="tipo"]:checked').value,
+         nombre=document.getElementById('reg-nombre').value.trim(),
+         apellido=document.getElementById('reg-apellido').value.trim(),
+         email=document.getElementById('reg-email').value.trim(),
+         telefono=document.getElementById('reg-telefono').value.trim(),
+         password=document.getElementById('reg-password').value,
+         rubro=document.getElementById('reg-rubro')?document.getElementById('reg-rubro').value||null:null,
+         cuit=document.getElementById('reg-cuit')?document.getElementById('reg-cuit').value.trim()||null:null,
+         dni=document.getElementById('reg-dni')?document.getElementById('reg-dni').value.trim()||null:null,
+         btn=document.getElementById('register-submit');
+    btn.disabled=true;btn.textContent='Creando cuenta…';
+    try{
+      if (tipo === 'profesional') {
+        if (!cuit) throw new Error('El CUIT es obligatorio.');
+        if (!dni) throw new Error('El DNI es obligatorio.');
+        if (!rubro) throw new Error('Seleccioná el rubro profesional.');
+      }
+
+      const resultado = await gsRegistrar({tipo,nombre,apellido,email,telefono,password,rubro,cuit,dni,certificado_url:null});
+      if (!resultado) return;
+
+      if (tipo === 'profesional') {
+        gsToast('Cuenta creada. Primero confirmá tu correo. Después podrás completar la documentación para que administración la revise.', 'success');
+      } else {
+        gsToast(resultado.session ? '¡Listo! Tu cuenta ya está activa.' : 'Cuenta creada. Revisá tu correo para confirmarla.', 'success');
+      }
+      setTimeout(()=>{setMode('login');document.getElementById('login-email').value=email;document.getElementById('login-email').focus();},1800);
+    }catch(err){
+      gsToast(err.message, 'error');
+    }finally{
+      btn.disabled=false;btn.textContent='Crear mi cuenta';
+    }
+  });
+})();
+</script><script src="js/life.js"></script>
+</body></html>

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mis pagos — Gran Servicio</title>
+<link rel="stylesheet" href="../css/style.css"><link rel="stylesheet" href="../css/gs-polish.css">
+<link rel="stylesheet" href="../css/dashboard.css"><link rel="stylesheet" href="../css/dashboard-v2.css">
+<link rel="stylesheet" href="../css/panel-life.css"><link rel="stylesheet" href="../css/responsive.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<link rel="stylesheet" href="../css/life.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar">
+    <a href="../index.html" class="logo"><img src="../img/logo.png" alt="Gran Servicio" class="logo-img"><span>GRAN SERVICIO</span></a>
+    <ul class="sidebar-nav"><li><a href="dashboard.html">Dashboard</a></li><li><a href="solicitudes.html">Mis solicitudes</a></li><li><a href="crear-solicitud.html">Solicitar servicio</a></li><li><a href="presupuesto.html">Presupuestos</a></li><li><a href="propuestas.html">Propuestas</a></li><li><a href="pagos.html" class="active">Pagos</a></li><li><a href="resenas.html">Reseñas</a></li><li><a href="reclamos.html">Reclamos</a></li><li><a href="mensajes.html">Mensajes</a></li><li><a href="notificaciones.html">Notificaciones</a></li><li><a href="perfil.html">Mi perfil</a></li></ul>
+    <div class="sidebar-foot"><button class="btn btn-ghost btn-sm" style="color:#CFE0EE" onclick="gsLogout()">Cerrar sesión</button></div>
+  </aside>
+  <main class="app-main">
+    <div class="topbar">
+      <button class="hamburger-menu btn btn-outline btn-sm" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+      <div></div><div class="topbar-user"><span id="nombre-usuario"></span><div class="avatar" id="avatar-usuario">--</div></div>
+    </div>
+    <div class="main-content">
+      <h2>Mis pagos</h2>
+      <div id="contenido-pagina" class="panel"><div class="loading-state"><div class="spinner"></div>Cargando…</div></div>
+    </div>
+  </main>
+</div>
+<script src="../js/supabase.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/realtime.js"></script>
+<script>
+(async () => {
+  const sesion = await gsProtegerPagina("cliente");
+  if (!sesion) return;
+  document.getElementById("nombre-usuario").textContent = sesion.perfil.nombre + " " + sesion.perfil.apellido;
+  document.getElementById("avatar-usuario").textContent = (sesion.perfil.nombre[0] + (sesion.perfil.apellido[0]||"")).toUpperCase();
+  window.SESION = sesion;
+  window.dispatchEvent(new Event("gs-sesion-lista"));
+})();
+</script>
+<script>
+window.addEventListener("gs-sesion-lista", async () => {
+  const { perfil } = window.SESION;
+  const { data } = await supabaseClient.from("transacciones")
+    .select("id_transaccion, monto, fecha, tipo_transaccion, mercado_pago_preference_id, mercado_pago_init_point, estados(nombre), pagos(codigo_operacion, fecha_pago, metodo_pagos(nombre))")
+    .eq("id_cliente", perfil.id_cliente).order("fecha", { ascending:false });
+  const cont = document.getElementById("contenido-pagina");
+  cont.innerHTML = (data && data.length) ? `<table><thead><tr><th>Fecha</th><th>Tipo</th><th>Monto</th><th>Método</th><th>Estado</th><th>Pago</th></tr></thead><tbody>
+    ${data.map(t => {
+      const estado = String(t.estados?.nombre || "").trim().toLowerCase();
+      const accion = estado === "pendiente"
+        ? (t.mercado_pago_init_point ? `<a class="btn btn-accent btn-sm" href="${gsEscapeHtml(t.mercado_pago_init_point)}" target="_blank" rel="noopener">Pagar</a>` : `<button class="btn btn-accent btn-sm" onclick="gsCrearPreferencia(${t.id_transaccion})">Generar pago</button>`)
+        : estado === "aprobada" ? `<span class="badge badge-exito">Pagado</span>` : `<span class="badge badge-error">Sin pago</span>`;
+      return `<tr><td>${new Date(t.fecha).toLocaleDateString()}</td><td>${gsEscapeHtml(t.tipo_transaccion)}</td><td>$${t.monto}</td>
+      <td>${gsEscapeHtml(t.pagos?.[0]?.metodo_pagos?.nombre || "—")}</td><td><span class="badge badge-neutro">${gsEscapeHtml(t.estados?.nombre||"—")}</span></td><td>${accion}</td></tr>`;
+    }).join("")}
+  </tbody></table>` : '<div class="empty-state">Todavía no tenés pagos registrados.</div>';
+});
+</script>
+
+<script>
+async function gsCrearPreferencia(idTransaccion){
+  const { data, error } = await supabaseClient.functions.invoke("mercado-pago-create-preference-v3", { body:{ id_transaccion:Number(idTransaccion), back_urls:{ success:location.origin+"/cliente/pagos.html?estado=success", failure:location.origin+"/cliente/pagos.html?estado=failure", pending:location.origin+"/cliente/pagos.html?estado=pending" }, auto_return:"approved" } });
+  if(error){ gsToast("No se pudo preparar Mercado Pago: "+error.message,"error"); return; }
+  if(data?.error){ gsToast(data.error,"error"); return; }
+  if(data?.init_point){ window.location.href=data.init_point; }
+}
+</script>
+
+<script src="../js/panel-life.js"></script><script src="../js/life.js"></script>
+</body></html>

@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Servicios — Gran Servicio</title>
+<link rel="stylesheet" href="../css/style.css"><link rel="stylesheet" href="../css/gs-polish.css"><link rel="stylesheet" href="../css/dashboard.css"><link rel="stylesheet" href="../css/dashboard-v2.css"><link rel="stylesheet" href="../css/panel-life.css"><link rel="stylesheet" href="../css/responsive.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<link rel="stylesheet" href="../css/life.css">
+</head>
+<body><div class="app-shell">
+<aside class="sidebar" id="sidebar"><a href="../index.html" class="logo"><img src="../img/logo.png" alt="Gran Servicio" class="logo-img"><span>GRAN SERVICIO</span></a>
+<ul class="sidebar-nav"><li><a href="dashboard.html">Dashboard</a></li><li><a href="solicitudes.html">Mis solicitudes</a></li><li><a href="crear-solicitud.html">Solicitar servicio</a></li><li><a href="presupuesto.html">Presupuestos</a></li><li><a href="propuestas.html">Propuestas</a></li><li><a href="servicios.html" class="active">Servicios</a></li><li><a href="pagos.html">Pagos</a></li><li><a href="resenas.html">Reseñas</a></li><li><a href="reclamos.html">Reclamos</a></li><li><a href="mensajes.html">Mensajes</a></li><li><a href="notificaciones.html">Notificaciones</a></li><li><a href="perfil.html">Mi perfil</a></li></ul>
+<div class="sidebar-foot"><button class="btn btn-ghost btn-sm" onclick="gsLogout()">Cerrar sesión</button></div></aside>
+<main class="app-main"><div class="topbar"><button class="hamburger-menu btn btn-outline btn-sm" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button><div></div><div class="topbar-user"><span id="nombre-usuario"></span><div class="avatar" id="avatar-usuario">--</div></div></div>
+<div class="main-content"><div class="flex-between"><div><span class="eyebrow">Catálogo</span><h2>Servicios disponibles</h2><p class="muted">Elegí un servicio y solicitá un profesional en Córdoba.</p></div><a href="crear-solicitud.html" class="btn btn-accent">Solicitar servicio</a></div><div id="lista-servicios" class="grid-2"><div class="loading-state"><div class="spinner"></div>Cargando servicios…</div></div></div></main></div>
+<script src="../js/supabase.js"></script><script src="../js/auth.js"></script><script>
+(async()=>{const sesion=await gsProtegerPagina('cliente');if(!sesion)return;document.getElementById('nombre-usuario').textContent=sesion.perfil.nombre+' '+sesion.perfil.apellido;document.getElementById('avatar-usuario').textContent=(sesion.perfil.nombre[0]+(sesion.perfil.apellido[0]||'')).toUpperCase();const {data,error}=await supabaseClient.from('servicios').select('id_servicio,nombre,descripcion,tarifa_referencial,categorias_servicio(nombre)').eq('activo',true).order('nombre');const c=document.getElementById('lista-servicios');if(error){c.innerHTML='<div class="empty-state">No pudimos cargar los servicios. Intentá nuevamente.</div>';return;}c.innerHTML=(data||[]).map(s=>`<article class="card card-hover"><span class="badge badge-naranja">${gsEscapeHtml(s.categorias_servicio?.nombre||'Servicio')}</span><h3 style="margin-top:10px">${gsEscapeHtml(s.nombre)}</h3><p class="muted">${gsEscapeHtml(s.descripcion||'Servicio profesional disponible.')}</p><strong>Tarifa referencial: $${Number(s.tarifa_referencial||0).toLocaleString('es-AR')}</strong><div style="margin-top:16px"><a class="btn btn-accent btn-sm" href="crear-solicitud.html?servicio=${s.id_servicio}">Solicitar este servicio</a></div></article>`).join('')||'<div class="empty-state">No hay servicios activos disponibles.</div>';})();
+</script><script src="../js/panel-life.js"></script><script src="../js/life.js"></script>
+</body></html>

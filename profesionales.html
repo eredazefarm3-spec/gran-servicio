@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Profesionales — Gran Servicio</title>
+<link rel="stylesheet" href="css/style.css"><link rel="stylesheet" href="css/responsive.css"><link rel="stylesheet" href="css/gs-polish.css"><link rel="stylesheet" href="css/life.css?v=2"><link rel="stylesheet" href="css/profesionales-demo.css?v=5">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+</head>
+<body>
+<nav class="navbar"><div class="container navbar-inner"><a href="/index.html" class="logo"><img src="/img/logo.png" alt="Gran Servicio" class="logo-img"><span>GRAN SERVICIO</span></a><div class="nav-links"><a href="/index.html">Inicio</a><a href="/como-funciona.html">Cómo funciona</a><a href="/servicios.html">Servicios</a><a href="/profesionales.html">Profesionales</a><a href="/sobre-nosotros.html">Nosotros</a><a href="/contacto.html">Contacto</a></div><div class="nav-actions"><a href="/login.html" class="btn btn-outline btn-sm">Ingresar</a><a href="/registro.html?tipo=profesional" class="btn btn-accent btn-sm">Ser profesional</a></div><button class="nav-toggle" aria-label="Abrir menú">☰</button></div></nav>
+<header class="page-hero"><div class="container"><span class="eyebrow">Red profesional</span><h1>Encontrá a la persona indicada para tu trabajo.</h1><p class="lead">Conocé profesionales, compará especialidades y revisá sus datos antes de enviar una solicitud.</p></div></header>
+<section class="section"><div class="container">
+  <div class="pros-toolbar">
+    <input type="search" id="filtro-nombre" placeholder="Buscar por nombre, oficio o especialidad…" aria-label="Buscar profesional">
+    <select id="filtro-rubro" aria-label="Filtrar por profesión"><option value="">Todas las profesiones</option></select>
+    <select id="filtro-zona" aria-label="Filtrar por zona"><option value="">Todas las zonas</option><option value="CABA">CABA</option><option value="GBA">GBA</option><option value="Remoto">Remoto</option></select>
+    <button class="btn btn-accent" id="btn-filtrar">Buscar</button>
+  </div>
+  <p class="pros-count" id="pros-count">48 profesionales disponibles</p>
+  <div class="pros-grid" id="lista-profesionales"></div>
+</div></section>
+<section class="section"><div class="container"><div class="gs-cta"><div><span class="eyebrow">¿Trabajás por tu cuenta?</span><h2>Mostrá lo que sabés hacer.</h2><p>Creá tu perfil y empezá a encontrar oportunidades.</p></div><a href="/registro.html?tipo=profesional" class="btn btn-accent">Quiero ser profesional →</a></div></div></section>
+<footer class="footer"><div class="container footer-bottom">© 2026 Gran Servicio · <a href="/privacidad.html">Privacidad</a> · <a href="/terminos.html">Términos</a></div></footer>
+<div class="pro-modal" id="pro-modal" aria-hidden="true"><div class="pro-modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-title"><button class="pro-close" id="pro-close" aria-label="Cerrar">×</button><div class="pro-modal-top"><img class="pro-modal-avatar" id="modal-foto" src="" alt=""><div><span class="eyebrow">Perfil profesional</span><h2 id="modal-title"></h2><p class="pro-modal-role" id="modal-profesion"></p><p class="muted" id="modal-ubicacion"></p></div></div><div class="pro-modal-body"><p id="modal-descripcion"></p><div class="pro-detail-grid" id="modal-detalles"></div><div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:20px"><a class="btn btn-accent" id="modal-solicitar" href="/login.html">Solicitar servicio</a><button class="btn btn-outline" id="modal-favorito">♡ Guardar profesional</button></div></div></div></div>
+<script src="js/supabase.js"></script><script src="js/auth.js"></script><script src="js/script.js"></script><script src="js/profesionales-demo.js"></script>
+<script>
+window.addEventListener("gs-demo-profesionales-listos", function initProfesionalesDemo() {
+const demo = window.GS_PROFESIONALES_DEMO || [];
+let activos = [...demo];
+let seleccionado = null;
+const $ = id => document.getElementById(id);
+const esc = value => typeof gsEscapeHtml === 'function' ? gsEscapeHtml(value) : String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fotoUrl = foto => 'assets/img/profesionales/' + encodeURIComponent(foto).replace(/%2F/g, '/');
+
+function initFiltros() {
+  const select = $('filtro-rubro');
+  if (!select) return;
+  const rubros = [...new Set(demo.map(p => p.profesion).filter(Boolean))].sort((a,b) => a.localeCompare(b));
+  rubros.forEach(r => {
+    const option = document.createElement('option');
+    option.value = r;
+    option.textContent = r;
+    select.appendChild(option);
+  });
+}
+
+function render() {
+  const q = ($('filtro-nombre')?.value || '').trim().toLowerCase();
+  const r = $('filtro-rubro')?.value || '';
+  const z = $('filtro-zona')?.value || '';
+
+  activos = demo.filter(p => {
+    const text = [p.nombre,p.apellido,p.profesion,p.especialidad,p.ciudad,p.zona].join(' ').toLowerCase();
+    const zona = !z || String(p.zona || '').toLowerCase().includes(z.toLowerCase()) || String(p.ciudad || '').toLowerCase().includes(z.toLowerCase());
+    return (!q || text.includes(q)) && (!r || p.profesion === r) && zona;
+  });
+
+  $('pros-count').textContent = `${activos.length} profesional${activos.length === 1 ? '' : 'es'} encontrado${activos.length === 1 ? '' : 's'}`;
+  const lista = $('lista-profesionales');
+  if (!lista) return;
+
+  lista.innerHTML = activos.length ? activos.map(p => `
+    <article class="pro-card card">
+      <div class="pro-cover"></div>
+      <div class="pro-avatar-wrap">
+        <img class="pro-avatar" src="${fotoUrl(p.foto)}" alt="Foto de perfil de ${esc(p.nombre)} ${esc(p.apellido)}" loading="lazy">
+        <span class="pro-verified">Perfil demo</span>
+      </div>
+      <div class="pro-body">
+        <div class="pro-name">
+          <div><h3>${esc(p.nombre)} ${esc(p.apellido)}</h3><p class="pro-role">${esc(p.profesion)}</p></div>
+          <button type="button" class="pro-fav" data-fav="${esc(p.id)}" aria-label="Guardar ${esc(p.nombre)}">♡</button>
+        </div>
+        <p class="pro-location">📍 ${esc(p.zona)} · ${esc(p.experiencia)}</p>
+        <p class="pro-description">${esc(p.descripcion)}</p>
+        <div class="pro-meta"><span class="pro-chip">${esc(p.especialidad)}</span><span class="pro-chip">${esc(p.precio)}</span></div>
+        <div class="pro-bottom">
+          <div class="pro-rating"><span>★</span> ${Number(p.calificacion || 0).toFixed(1)} · ${esc(p.trabajos)} trabajos</div>
+          <div class="pro-actions"><button type="button" class="btn btn-primary btn-sm" data-profile="${esc(p.id)}">Ver perfil</button></div>
+        </div>
+      </div>
+    </article>`).join('') : `
+      <div class="pro-empty"><h3>No encontramos profesionales</h3><p class="muted">Probá con otro nombre, profesión o zona.</p><button type="button" class="btn btn-accent" id="btn-ver-todos">Ver todos</button></div>`;
+  syncFavs();
+}
+
+function syncFavs() {
+  let favs = [];
+  try { favs = JSON.parse(localStorage.getItem('gs_prof_favs') || '[]'); } catch (_) {}
+  document.querySelectorAll('[data-fav]').forEach(b => {
+    const on = favs.includes(b.dataset.fav);
+    b.classList.toggle('active', on);
+    b.textContent = on ? '♥' : '♡';
+  });
+}
+
+function toggleFav(id) {
+  let favs = [];
+  try { favs = JSON.parse(localStorage.getItem('gs_prof_favs') || '[]'); } catch (_) {}
+  favs = favs.includes(id) ? favs.filter(x => x !== id) : [...favs, id];
+  try { localStorage.setItem('gs_prof_favs', JSON.stringify(favs)); } catch (_) {}
+  syncFavs();
+}
+
+function openProfile(id) {
+  const p = demo.find(x => String(x.id) === String(id));
+  if (!p) return;
+  seleccionado = p;
+  $('modal-foto').src = fotoUrl(p.foto);
+  $('modal-foto').alt = `Foto de perfil de ${p.nombre} ${p.apellido}`;
+  $('modal-title').textContent = `${p.nombre} ${p.apellido}`;
+  $('modal-profesion').textContent = p.profesion || '';
+  $('modal-ubicacion').textContent = `📍 ${p.zona || p.ciudad || ''}`;
+  $('modal-descripcion').textContent = p.descripcion || '';
+  $('modal-detalles').innerHTML = [
+    ['Especialidad', p.especialidad],
+    ['Experiencia', p.experiencia],
+    ['Calificación', `${Number(p.calificacion || 0).toFixed(1)} / 5`],
+    ['Trabajos realizados', p.trabajos],
+    ['Precio orientativo', p.precio],
+    ['Disponibilidad', p.disponible === false ? 'No disponible' : 'Disponible']
+  ].map(([label,value]) => `<div class="pro-detail"><small>${esc(label)}</small><strong>${esc(value)}</strong></div>`).join('');
+  $('modal-solicitar').href = `login.html?profesional=${encodeURIComponent(p.id)}`;
+  let favs = [];
+  try { favs = JSON.parse(localStorage.getItem('gs_prof_favs') || '[]'); } catch (_) {}
+  $('modal-favorito').textContent = favs.includes(p.id) ? '♥ Guardado' : '♡ Guardar profesional';
+  $('pro-modal').classList.add('open');
+  $('pro-modal').setAttribute('aria-hidden','false');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeProfile() {
+  $('pro-modal').classList.remove('open');
+  $('pro-modal').setAttribute('aria-hidden','true');
+  document.body.style.overflow = '';
+}
+
+function limpiarFiltros() {
+  $('filtro-nombre').value = '';
+  $('filtro-rubro').value = '';
+  $('filtro-zona').value = '';
+  render();
+}
+
+$('lista-profesionales').addEventListener('click', e => {
+  if (e.target.closest('#btn-ver-todos')) { limpiarFiltros(); return; }
+
+  const prof = e.target.closest('[data-profile]');
+  if (prof) { e.preventDefault(); openProfile(prof.dataset.profile); return; }
+  const fav = e.target.closest('[data-fav]');
+  if (fav) { e.preventDefault(); toggleFav(fav.dataset.fav); }
+});
+$('btn-filtrar').addEventListener('click', render);
+$('filtro-nombre').addEventListener('input', render);
+$('filtro-rubro').addEventListener('change', render);
+$('filtro-zona').addEventListener('change', render);
+$('modal-favorito').addEventListener('click', () => { if (seleccionado) toggleFav(seleccionado.id); openProfile(seleccionado.id); });
+$('pro-close').addEventListener('click', closeProfile);
+$('pro-modal').addEventListener('click', e => { if (e.target.id === 'pro-modal') closeProfile(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeProfile(); });
+
+initFiltros();
+render();
+});
+</script><script src="js/life.js"></script></body></html>

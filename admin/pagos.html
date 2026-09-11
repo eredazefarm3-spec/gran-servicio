@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pagos — Gran Servicio</title>
+<link rel="stylesheet" href="../css/style.css"><link rel="stylesheet" href="../css/gs-polish.css">
+<link rel="stylesheet" href="../css/dashboard.css"><link rel="stylesheet" href="../css/dashboard-v2.css">
+<link rel="stylesheet" href="../css/panel-life.css"><link rel="stylesheet" href="../css/responsive.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<link rel="stylesheet" href="../css/life.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar">
+    <a href="../index.html" class="logo"><img src="../img/logo.png" alt="Gran Servicio" class="logo-img"><span>GRAN SERVICIO</span></a>
+    <ul class="sidebar-nav"><li><a href="dashboard.html">Dashboard</a></li><li><a href="clientes.html">Clientes</a></li><li><a href="profesionales.html">Profesionales</a></li><li><a href="empleados.html">Empleados</a></li><li><a href="solicitudes.html">Solicitudes</a></li><li><a href="propuestas.html">Propuestas</a></li><li><a href="asignaciones.html">Asignaciones</a></li><li><a href="pagos.html" class="active">Pagos</a></li><li><a href="transacciones.html">Transacciones</a></li><li><a href="facturas.html">Facturas</a></li><li><a href="comisiones.html">Comisiones</a></li><li><a href="reclamos.html">Reclamos</a></li><li><a href="soporte.html">Soporte</a></li><li><a href="suscripciones.html">Suscripciones</a></li><li><a href="geografia.html">Geografía</a></li><li><a href="catalogos.html">Catálogos</a></li></ul>
+    <div class="sidebar-foot"><button class="btn btn-ghost btn-sm" style="color:#CFE0EE" onclick="gsLogout()">Cerrar sesión</button></div>
+  </aside>
+  <main class="app-main">
+    <div class="topbar">
+      <button class="hamburger-menu btn btn-outline btn-sm" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+      <div></div><div class="topbar-user"><span id="nombre-usuario"></span><div class="avatar" id="avatar-usuario">--</div></div>
+    </div>
+    <div class="main-content">
+      <h2>Pagos</h2>
+      <div id="contenido-pagina" class="panel"><div class="loading-state"><div class="spinner"></div>Cargando…</div></div>
+    </div>
+  </main>
+</div>
+<script src="../js/supabase.js"></script>
+<script src="../js/auth.js"></script>
+<script>
+(async () => {
+  const sesion = await gsProtegerPagina("empleado");
+  if (!sesion) return;
+  document.getElementById("nombre-usuario").textContent = sesion.perfil.nombre + " " + sesion.perfil.apellido;
+  document.getElementById("avatar-usuario").textContent = (sesion.perfil.nombre[0] + (sesion.perfil.apellido[0]||"")).toUpperCase();
+  window.SESION = sesion;
+  window.dispatchEvent(new Event("gs-sesion-lista"));
+})();
+</script>
+<script>
+window.addEventListener("gs-sesion-lista", async () => {
+  const { data } = await supabaseClient.from("pagos")
+    .select("id_pago, monto, fecha_pago, codigo_operacion, mercado_pago_payment_id, mercado_pago_status, reembolso_estado, reembolsado_en, estados(nombre), metodo_pagos(nombre)")
+    .order("fecha_pago",{ascending:false}).limit(100);
+  document.getElementById("contenido-pagina").innerHTML = (data && data.length) ? `<table><thead><tr>
+    <th>Fecha</th><th>Método</th><th>Monto</th><th>Mercado Pago</th><th>Estado</th><th>Acción</th></tr></thead><tbody>
+    ${data.map(p=>`<tr><td>${new Date(p.fecha_pago).toLocaleDateString()}</td><td>${gsEscapeHtml(p.metodo_pagos?.nombre||"—")}</td>
+    <td>$${p.monto}</td><td>${p.mercado_pago_payment_id ? `<span class="badge badge-naranja">${p.mercado_pago_status||"MP"}</span>` : "—"}</td><td><span class="badge badge-neutro">${gsEscapeHtml(p.reembolso_estado === "approved" ? "Reembolsado" : (p.estados?.nombre||"—"))}</span></td><td>${p.mercado_pago_payment_id && p.mercado_pago_status === "approved" && p.reembolso_estado !== "approved" ? `<button class="btn btn-accent btn-sm" onclick="gsReembolsar(${p.id_pago})">Reembolsar</button>` : "—"}</td></tr>`).join("")}
+    </tbody></table>` : '<div class="empty-state">Sin pagos todavía.</div>';
+});
+</script>
+
+<script>
+async function gsReembolsar(idPago){
+  if(!confirm("¿Confirmás el reembolso real de este pago en Mercado Pago?")) return;
+  const { data, error } = await supabaseClient.functions.invoke("mercado-pago-refund-v2", { body:{ id_pago:Number(idPago) } });
+  if(error){ gsToast("No se pudo iniciar el reembolso: "+error.message,"error"); return; }
+  if(data?.error){ gsToast(data.error,"error"); return; }
+  gsToast("Reembolso procesado correctamente en Mercado Pago.","success");
+  setTimeout(()=>location.reload(),700);
+}
+</script>
+
+<script src="../js/panel-life.js"></script><script src="../js/life.js"></script>
+</body></html>

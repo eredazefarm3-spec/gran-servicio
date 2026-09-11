@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Política de Privacidad — Gran Servicio</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/responsive.css">
+<link rel="stylesheet" href="css/gs-polish.css">
+<link rel="stylesheet" href="css/life.css">
+<style>
+  .legal-content { line-height: 1.6; color: var(--texto); }
+  .legal-content h2 { margin-top: 2rem; margin-bottom: 1rem; font-size: 1.5rem; }
+  .legal-content h3 { margin-top: 1.5rem; margin-bottom: 0.5rem; font-size: 1.2rem; }
+  .legal-content p { margin-bottom: 1rem; }
+  .legal-content ul { margin-bottom: 1rem; padding-left: 20px; }
+  .legal-content li { margin-bottom: 0.5rem; }
+</style>
+</head>
+<body>
+<nav class="navbar"><div class="container navbar-inner"><a href="/index.html" class="logo"><img src="/img/logo.png" alt="Gran Servicio" class="logo-img"><span>GRAN SERVICIO</span></a><div class="nav-links"><a href="/index.html">Inicio</a><a href="/como-funciona.html">Cómo funciona</a><a href="/servicios.html">Servicios</a><a href="/profesionales.html">Profesionales</a><a href="/sobre-nosotros.html">Nosotros</a><a href="/contacto.html">Contacto</a></div><button class="nav-toggle" aria-label="Abrir menú">☰</button></div></nav>
+
+<main class="section">
+  <div class="container" style="max-width:820px">
+    <span class="eyebrow">Legal</span>
+    <h1 style="margin-bottom: 2rem;">Política de Privacidad</h1>
+    
+    <div class="card legal-content">
+      <p><em>Última actualización: Septiembre 2026</em></p>
+      <p>En <strong>Gran Servicio</strong> (en adelante, "la Plataforma"), valoramos y respetamos tu privacidad. Esta política describe cómo recopilamos, utilizamos, protegemos y compartimos tus datos personales cuando utilizas nuestra plataforma para conectar a clientes con profesionales de servicios en la provincia de Córdoba.</p>
+
+      <h2>1. Datos que recopilamos</h2>
+      <p>Podemos recopilar los siguientes datos personales según las funciones que utilices:</p>
+      <ul>
+        <li><strong>Datos de cuenta y perfil:</strong> Nombre, apellido, correo electrónico, número de teléfono. Para los profesionales, también recopilamos DNI, CUIT, rubros de especialización y biografía.</li>
+        <li><strong>Datos de ubicación:</strong> Ubicación geográfica y zonas de cobertura proporcionadas para encontrar servicios o clientes cercanos en la provincia de Córdoba.</li>
+        <li><strong>Datos de solicitudes y propuestas:</strong> Información detallada sobre los servicios solicitados, descripciones, presupuestos y diagnósticos.</li>
+        <li><strong>Fotografías y documentación:</strong> Fotos de perfil, imágenes de los problemas a solucionar adjuntadas a las solicitudes, y documentos de identidad subidos por los profesionales para el proceso de validación.</li>
+        <li><strong>Datos de pago e historial:</strong> Información sobre transacciones realizadas, ingresos y comprobantes. No almacenamos datos completos de tarjetas de crédito (gestionados por Mercado Pago).</li>
+        <li><strong>Reseñas y comunicaciones:</strong> Calificaciones, comentarios y mensajes intercambiados a través de la plataforma.</li>
+      </ul>
+
+      <h2>2. Finalidad del uso de datos</h2>
+      <p>Utilizamos tus datos para los siguientes propósitos:</p>
+      <ul>
+        <li>Crear y gestionar tu cuenta de usuario (Cliente o Profesional).</li>
+        <li>Conectar las necesidades de los clientes con los profesionales más adecuados según su ubicación y rubro.</li>
+        <li>Validar la identidad y calificaciones de los profesionales para garantizar un entorno seguro (mediante el proceso de aprobación).</li>
+        <li>Procesar pagos y retener comisiones de forma segura.</li>
+        <li>Enviar notificaciones relevantes sobre el estado de tus solicitudes, presupuestos, mensajes o actualizaciones de la plataforma.</li>
+        <li>Mejorar nuestros servicios, investigar reclamos y brindar soporte técnico.</li>
+      </ul>
+
+      <h2>3. Autenticación y Seguridad</h2>
+      <p>La autenticación de usuarios es gestionada mediante <strong>Supabase Auth</strong>. Tus contraseñas se almacenan de forma segura y encriptada por nuestro proveedor de infraestructura.</p>
+      <p>Implementamos Políticas de Seguridad a Nivel de Fila (RLS) en nuestra base de datos para garantizar que cada usuario acceda únicamente a la información que le corresponde. Por ejemplo, los clientes solo pueden ver los presupuestos que se les han enviado, y los profesionales solo pueden ver las solicitudes públicas de su área o aquellas a las que han sido asignados.</p>
+
+      <h2>4. Manejo de Ubicación y Domicilio</h2>
+      <p>Entendemos que la ubicación es un dato sensible. La ubicación exacta (domicilio específico) proporcionada por un cliente en una solicitud <strong>no se publica de forma abierta</strong> en la plataforma. Solo se utiliza a nivel interno para calcular distancias aproximadas (mostrando un radio o barrio) a los profesionales que navegan el mapa de demanda, y solo se revela la dirección exacta al profesional <strong>una vez que el cliente acepta el presupuesto o propuesta</strong> y se inicia la asignación del trabajo.</p>
+
+      <h2>5. Proveedores de Terceros</h2>
+      <p>Podemos compartir datos limitados con terceros únicamente para el funcionamiento de la plataforma:</p>
+      <ul>
+        <li><strong>Mercado Pago:</strong> Para el procesamiento seguro de transacciones. No guardamos los datos de tu tarjeta.</li>
+        <li><strong>Supabase:</strong> Como proveedor de alojamiento de base de datos, autenticación y almacenamiento de archivos.</li>
+        <li>Servicios de mapas (OpenStreetMap/Leaflet) para funciones de geolocalización, sin enviar datos personales identificables.</li>
+      </ul>
+
+      <h2>6. Tus Derechos</h2>
+      <p>Como usuario de Gran Servicio, tenés derecho a:</p>
+      <ul>
+        <li>Acceder, actualizar o corregir tus datos personales desde tu perfil.</li>
+        <li>Solicitar la eliminación de tu cuenta y datos asociados, sujeto a obligaciones legales de retención (ej. registros de facturación o transacciones completadas).</li>
+        <li>Configurar tus preferencias de comunicación y notificaciones.</li>
+      </ul>
+
+      <h2>7. Contacto</h2>
+      <p>Si tenés preguntas, reclamos o sugerencias sobre esta Política de Privacidad o el tratamiento de tus datos, podés comunicarte con nuestro equipo de soporte enviando un correo a <strong>privacidad@granservicio.com.ar</strong> o a través de nuestra sección de <a href="/contacto.html">Contacto</a>.</p>
+    </div>
+    <p style="margin-top:22px"><a href="/index.html">← Volver al inicio</a></p>
+  </div>
+</main>
+
+<footer class="footer"><div class="container footer-grid"><div><div class="logo" style="margin-bottom:10px"><img src="/img/logo.png" alt="Gran Servicio" class="logo-img"><span>GRAN SERVICIO</span></div><p>Una plataforma para conectar necesidades reales con profesionales.</p></div><div><h4>Explorá</h4><p><a href="/servicios.html">Servicios</a></p><p><a href="/profesionales.html">Profesionales</a></p><p><a href="/como-funciona.html">Cómo funciona</a></p></div><div><h4>Gran Servicio</h4><p><a href="/sobre-nosotros.html">Nosotros</a></p><p><a href="/contacto.html">Contacto</a></p><p><a href="/faq.html">Preguntas frecuentes</a></p></div><div><h4>Tu cuenta</h4><p><a href="/login.html">Ingresar</a></p><p><a href="/registro.html">Crear cuenta</a></p></div></div><div class="container footer-bottom">© 2026 Gran Servicio · <a href="/privacidad.html">Privacidad</a> · <a href="/terminos.html">Términos</a></div></footer>
+
+<script>
+document.addEventListener('DOMContentLoaded',function(){
+  var toggle=document.querySelector('.nav-toggle');
+  var navLinks=document.querySelector('.nav-links');
+  if(toggle&&navLinks){toggle.addEventListener('click',function(){navLinks.classList.toggle('open');toggle.setAttribute('aria-expanded',navLinks.classList.contains('open'))});}
+});
+</script>
+<script src="js/life.js"></script>
+</body>
+</html>

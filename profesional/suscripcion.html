@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Suscripción — Gran Servicio</title>
+<link rel="stylesheet" href="../css/style.css"><link rel="stylesheet" href="../css/gs-polish.css">
+<link rel="stylesheet" href="../css/dashboard.css"><link rel="stylesheet" href="../css/dashboard-v2.css">
+<link rel="stylesheet" href="../css/panel-life.css"><link rel="stylesheet" href="../css/responsive.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<link rel="stylesheet" href="../css/life.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar">
+    <a href="../index.html" class="logo"><img src="../img/logo.png" alt="Gran Servicio" class="logo-img"><span>GRAN SERVICIO</span></a>
+    <ul class="sidebar-nav"><li><a href="dashboard.html">Dashboard</a></li><li><a href="solicitudes-cercanas.html">Solicitudes cercanas</a></li><li><a href="crear-presupuesto.html">Crear presupuesto</a></li><li><a href="mis-propuestas.html">Mis propuestas</a></li><li><a href="mis-servicios.html">Mis servicios</a></li><li><a href="disponibilidad.html">Disponibilidad</a></li><li><a href="zonas.html">Zonas de cobertura</a></li><li><a href="mapa-demanda.html">Zonas con más trabajo</a></li><li><a href="resenas.html">Mis reseñas</a></li><li><a href="suscripcion.html" class="active">Suscripción</a></li><li><a href="transacciones.html">Transacciones</a></li><li><a href="mensajes.html">Mensajes</a></li><li><a href="notificaciones.html">Notificaciones</a></li><li><a href="reclamos.html">Reclamos</a></li><li><a href="perfil.html">Perfil</a></li></ul>
+    <div class="sidebar-foot"><button class="btn btn-ghost btn-sm" style="color:#CFE0EE" onclick="gsLogout()">Cerrar sesión</button></div>
+  </aside>
+  <main class="app-main">
+    <div class="topbar">
+      <button class="hamburger-menu btn btn-outline btn-sm" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+      <div></div><div class="topbar-user"><span id="nombre-usuario"></span><div class="avatar" id="avatar-usuario">--</div></div>
+    </div>
+    <div class="main-content">
+      <h2>Suscripción</h2>
+      <div id="contenido-pagina" class="panel"><div class="loading-state"><div class="spinner"></div>Cargando…</div></div>
+    </div>
+  </main>
+</div>
+<script src="../js/supabase.js"></script>
+<script src="../js/auth.js"></script>
+<script>
+(async () => {
+  const sesion = await gsProtegerPagina("profesional");
+  if (!sesion) return;
+  document.getElementById("nombre-usuario").textContent = sesion.perfil.nombre + " " + sesion.perfil.apellido;
+  document.getElementById("avatar-usuario").textContent = (sesion.perfil.nombre[0] + (sesion.perfil.apellido[0]||"")).toUpperCase();
+  window.SESION = sesion;
+  window.dispatchEvent(new Event("gs-sesion-lista"));
+})();
+</script>
+<script>
+window.addEventListener("gs-sesion-lista", async () => {
+  const { perfil } = window.SESION;
+  const { data: planes } = await supabaseClient.from("planes_suscripcion").select("*, monedas(simbolo)").eq("activo", true);
+  const { data: miSuscripcion } = await supabaseClient.from("suscriptores").select("*, planes_suscripcion(nombre), estados(nombre)")
+    .eq("id_profesional", perfil.id_profesional).order("fecha_inicio",{ascending:false}).limit(1).maybeSingle();
+
+  document.getElementById("contenido-pagina").innerHTML = `
+    ${miSuscripcion ? `<div class="panel" style="background:var(--azul-suave)">
+      <strong>Plan actual: ${gsEscapeHtml(miSuscripcion.planes_suscripcion?.nombre)}</strong>
+      <span class="badge badge-azul" style="margin-left:8px">${gsEscapeHtml(miSuscripcion.estados?.nombre||"—")}</span></div>` : ''}
+    <div class="grid-3" style="margin-top:16px">
+    ${(planes||[]).map(p => `<div class="card">
+      <span class="eyebrow">${gsEscapeHtml(p.periodicidad)}</span><h3>${gsEscapeHtml(p.nombre)}</h3>
+      <p class="muted">${gsEscapeHtml(p.descripcion)}</p>
+      <p style="font-size:1.4rem;font-weight:800;color:var(--naranja-oscuro)">${gsEscapeHtml(p.monedas?.simbolo||"$")}${p.precio}</p>
+      <p class="muted" style="font-size:.85rem">${p.limite_solicitudes ? p.limite_solicitudes + " solicitudes/mes" : "Solicitudes ilimitadas"}</p>
+      <button class="btn btn-primary btn-sm btn-block" onclick="gsSuscribirse('${p.id_plan}')">Elegir plan</button>
+    </div>`).join("")}
+    </div>`;
+});
+
+async function gsSuscribirse(idPlan) {
+  const { data, error } = await supabaseClient.rpc("crear_transaccion_suscripcion", { p_id_plan: Number(idPlan) });
+  if (error || !data?.ok) { gsToast(error?.message || "No pudimos preparar el plan.", "error"); return; }
+  if (data.gratis) {
+    gsToast("Plan gratuito activado correctamente.", "success");
+    setTimeout(() => window.location.reload(), 700);
+    return;
+  }
+  if (!data?.id_transaccion) { gsToast("No pudimos preparar el pago del plan.", "error"); return; }
+  const r = await supabaseClient.functions.invoke("mercado-pago-create-preference-v3", { body: { id_transaccion: Number(data.id_transaccion), title: "Suscripción Gran Servicio", back_urls: { success: location.href + "?estado=success", failure: location.href + "?estado=failure", pending: location.href + "?estado=pending" }, auto_return: "approved" } });
+  if (r.error || r.data?.error) { gsToast(r.data?.error || "No pudimos abrir Mercado Pago.", "error"); return; }
+  const url = r.data?.init_point || r.data?.sandbox_init_point;
+  if (!url) { gsToast("Mercado Pago no devolvió un enlace de pago.", "error"); return; }
+  window.location.href = url;
+}
+
+</script>
+<script src="../js/panel-life.js"></script><script src="../js/life.js"></script>
+</body></html>

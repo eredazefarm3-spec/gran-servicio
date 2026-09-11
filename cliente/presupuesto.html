@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0B2E4F">
+<title>Presupuestos recibidos - Gran Servicio</title>
+<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="../css/gs-polish.css">
+<link rel="stylesheet" href="../css/dashboard.css"><link rel="stylesheet" href="../css/dashboard-v2.css">
+<link rel="stylesheet" href="../css/panel-life.css"><link rel="stylesheet" href="../css/responsive.css">
+<link rel="stylesheet" href="../css/life.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+.pres-card{background:var(--azul-medio);border:1px solid var(--naranja-claro);border-radius:12px;padding:20px;margin-bottom:14px}
+.pres-card.pendiente{border-color:var(--naranja-medio)}
+.pres-card.aceptado{border-color:#2F7D5A}
+.pres-card.rechazado{border-color:#B23A2E}
+.pres-desglose{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:14px 0;background:var(--azul-oscuro);border-radius:8px;padding:14px}
+.pres-item label{display:block;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;opacity:.6;margin-bottom:3px}
+.pres-item span{font-size:1.1rem;font-weight:700}
+.pres-total{font-size:1.5rem;font-weight:800;color:var(--naranja-medio)}
+.pres-acciones{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+.gs-modal-overlay{display:none;position:fixed;inset:0;background:rgba(7,31,54,.85);z-index:500;align-items:center;justify-content:center;padding:20px}
+.gs-modal-overlay.open{display:flex}
+.gs-modal{background:var(--azul-medio);border:1px solid var(--naranja-claro);border-radius:16px;padding:28px;max-width:440px;width:100%}
+.gs-modal h3{margin:0 0 14px}
+.gs-modal textarea{width:100%;background:var(--azul-oscuro);border:1px solid rgba(255,255,255,.15);color:#fff;border-radius:8px;padding:10px;font-size:.9rem;font-family:inherit;box-sizing:border-box}
+.gs-modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:14px}
+</style>
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar">
+    <a href="../index.html" class="logo"><img src="../img/logo.png" alt="Gran Servicio" class="logo-img"><span>GRAN SERVICIO</span></a>
+    <ul class="sidebar-nav">
+      <li><a href="dashboard.html">Dashboard</a></li>
+      <li><a href="crear-solicitud.html">Nueva solicitud</a></li>
+      <li><a href="solicitudes.html">Mis solicitudes</a></li>
+      <li><a href="propuestas.html">Propuestas</a></li>
+      <li><a href="presupuesto.html" class="active">Presupuestos</a></li>
+      <li><a href="pagos.html">Pagos</a></li>
+      <li><a href="resenas.html">Mis resenas</a></li>
+      <li><a href="reclamos.html">Reclamos</a></li>
+      <li><a href="mensajes.html">Mensajes</a></li>
+      <li><a href="notificaciones.html">Notificaciones</a></li>
+      <li><a href="perfil.html">Perfil</a></li>
+    </ul>
+    <div class="sidebar-foot"><button class="btn btn-ghost btn-sm" style="color:#CFE0EE" onclick="gsLogout()">Cerrar sesion</button></div>
+  </aside>
+  <main class="app-main">
+    <div class="topbar">
+      <button class="hamburger-menu btn btn-outline btn-sm" onclick="document.getElementById('sidebar').classList.toggle('open')">&#9776;</button>
+      <div></div>
+      <div class="topbar-user"><span id="nombre-usuario"></span><div class="avatar" id="avatar-usuario">--</div></div>
+    </div>
+    <div class="main-content">
+      <h2>Presupuestos y diagnosticos</h2>
+      <p class="muted">Revisa los presupuestos enviados por los profesionales y acepta o rechaza cada uno.</p>
+
+      <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap">
+        <select id="filtro-estado" onchange="gsCargarPresupuestos()" style="background:var(--azul-oscuro);border:1px solid rgba(255,255,255,.15);color:#fff;padding:8px 12px;border-radius:6px;font-size:.9rem">
+          <option value="">Todos</option>
+          <option value="pendiente">Pendientes</option>
+          <option value="aceptado">Aceptados</option>
+          <option value="rechazado">Rechazados</option>
+        </select>
+        <button class="btn btn-outline btn-sm" onclick="gsCargarPresupuestos()">Actualizar</button>
+      </div>
+
+      <div id="lista-presupuestos"><div class="loading-state"><div class="spinner"></div>Cargando...</div></div>
+    </div>
+  </main>
+</div>
+
+<div class="gs-modal-overlay" id="modal-rechazo">
+  <div class="gs-modal">
+    <h3>Rechazar presupuesto</h3>
+    <p style="font-size:.9rem;color:#9fb4c5;margin-bottom:12px">Podes indicarle al profesional el motivo, para que pueda ajustarlo.</p>
+    <div class="form-group">
+      <label for="motivo-rechazo" style="display:block;margin-bottom:6px">Motivo (opcional)</label>
+      <textarea id="motivo-rechazo" rows="3" placeholder="El precio supera mi presupuesto / Prefiero evaluar otras propuestas..."></textarea>
+    </div>
+    <div class="gs-modal-actions">
+      <button class="btn btn-outline btn-sm" onclick="gsCerrarModal()">Cancelar</button>
+      <button class="btn btn-accent" style="background:#B23A2E;border-color:#B23A2E" id="btn-rechazar-confirm" onclick="gsConfirmarRechazo()">Confirmar rechazo</button>
+    </div>
+  </div>
+</div>
+
+<script src="../js/supabase.js"></script>
+<script src="../js/auth.js"></script>
+<script>
+var SESION = null;
+var ID_PRES_RECHAZO = null;
+
+(async function() {
+  SESION = await gsProtegerPagina("cliente");
+  if (!SESION) return;
+  document.getElementById("nombre-usuario").textContent = SESION.perfil.nombre + " " + SESION.perfil.apellido;
+  var av = document.getElementById("avatar-usuario");
+  if (av) av.textContent = (SESION.perfil.nombre[0]||"?").toUpperCase();
+  await gsCargarPresupuestos();
+})();
+
+async function gsCargarPresupuestos() {
+  if (!supabaseClient || !SESION) return;
+  var cont = document.getElementById("lista-presupuestos");
+  cont.innerHTML = '<div class="loading-state"><div class="spinner"></div>Cargando...</div>';
+  var filtroEstado = document.getElementById("filtro-estado").value;
+  var q = supabaseClient.from("presupuestos")
+    .select("id_presupuesto,tipo,descripcion,materiales,mano_de_obra,otros_costos,total,observaciones,vigencia_hasta,estado,motivo_rechazo,fecha_creacion,fecha_respuesta,usuario_profesional(nombre,apellido,calificacion_promedio,foto_url)")
+    .eq("id_cliente", SESION.perfil.id_cliente)
+    .order("fecha_creacion", {ascending:false});
+  if (filtroEstado) q = q.eq("estado", filtroEstado);
+  var r = await q;
+  if (r.error) { cont.innerHTML = '<p style="color:#f87171">Error: ' + gsEscapeHtml(r.error.message) + '</p>'; return; }
+  var lista = r.data || [];
+  if (!lista.length) {
+    cont.innerHTML = '<div style="text-align:center;padding:60px 20px;opacity:.6"><span style="font-size:3rem;display:block;margin-bottom:12px">&#128179;</span><p>No hay presupuestos todavia.</p><p style="font-size:.88rem">Cuando un profesional acepte tu solicitud y envie un presupuesto, aparecera aqui.</p></div>';
+    return;
+  }
+  var html = '';
+  lista.forEach(function(p) {
+    var prof = p.usuario_profesional || {};
+    var fechaStr = new Date(p.fecha_creacion).toLocaleDateString("es-AR", {day:"2-digit",month:"short",year:"numeric"});
+    var vigStr = p.vigencia_hasta ? "Vigente hasta: " + new Date(p.vigencia_hasta+"T12:00:00").toLocaleDateString("es-AR") : "";
+    var totalFmt = "$ " + parseFloat(p.total||0).toLocaleString("es-AR", {minimumFractionDigits:0});
+    var tipoLabel = p.tipo === "diagnostico" ? "&#128270; Diagnostico" : "&#128179; Presupuesto";
+    var estadoBadge = {
+      pendiente: '<span style="background:#B4880F22;color:#F0C040;border:1px solid #B4880F;padding:3px 10px;border-radius:20px;font-size:.75rem;font-weight:700">Pendiente</span>',
+      aceptado:  '<span style="background:#2F7D5A22;color:#4ade80;border:1px solid #2F7D5A;padding:3px 10px;border-radius:20px;font-size:.75rem;font-weight:700">Aceptado</span>',
+      rechazado: '<span style="background:#B23A2E22;color:#f87171;border:1px solid #B23A2E;padding:3px 10px;border-radius:20px;font-size:.75rem;font-weight:700">Rechazado</span>',
+      expirado:  '<span style="background:#42505F33;color:#94a3b8;border:1px solid #42505F;padding:3px 10px;border-radius:20px;font-size:.75rem;font-weight:700">Expirado</span>'
+    }[p.estado] || '';
+    html += '<div class="pres-card ' + (p.estado||"") + '">';
+    html += '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">';
+    html += '<div><span style="font-size:.8rem;opacity:.6">' + gsEscapeHtml(fechaStr) + '</span><br><strong style="font-size:1rem">' + tipoLabel + '</strong>';
+    html += ' de <strong>' + gsEscapeHtml(prof.nombre||"") + ' ' + gsEscapeHtml(prof.apellido||"") + '</strong></div>';
+    html += estadoBadge + '</div>';
+    html += '<p style="margin:12px 0 0;font-size:.92rem">' + gsEscapeHtml(p.descripcion) + '</p>';
+    if (p.tipo === "presupuesto") {
+      html += '<div class="pres-desglose">';
+      html += '<div class="pres-item"><label>Materiales</label><span>$ ' + parseFloat(p.materiales||0).toLocaleString("es-AR") + '</span></div>';
+      html += '<div class="pres-item"><label>Mano de obra</label><span>$ ' + parseFloat(p.mano_de_obra||0).toLocaleString("es-AR") + '</span></div>';
+      html += '<div class="pres-item"><label>Otros</label><span>$ ' + parseFloat(p.otros_costos||0).toLocaleString("es-AR") + '</span></div>';
+      html += '<div class="pres-item"><label>TOTAL</label><span class="pres-total">' + totalFmt + '</span></div>';
+      html += '</div>';
+    }
+    if (p.observaciones) html += '<p style="font-size:.85rem;color:#9fb4c5;margin-top:8px"><strong>Observaciones:</strong> ' + gsEscapeHtml(p.observaciones) + '</p>';
+    if (vigStr) html += '<p style="font-size:.82rem;opacity:.6;margin-top:4px">' + gsEscapeHtml(vigStr) + '</p>';
+    if (p.motivo_rechazo) html += '<p style="font-size:.82rem;color:#f87171;margin-top:8px">Tu motivo de rechazo: ' + gsEscapeHtml(p.motivo_rechazo) + '</p>';
+    if (p.estado === "pendiente") {
+      html += '<div class="pres-acciones">';
+      html += '<button class="btn btn-accent" onclick="gsAceptar(' + p.id_presupuesto + ', this)">&#10003; Aceptar este presupuesto</button>';
+      html += '<button class="btn btn-outline btn-sm" style="border-color:#f87171;color:#f87171" onclick="gsAbrirRechazo(' + p.id_presupuesto + ')">&#10007; Rechazar</button>';
+      html += '</div>';
+    }
+    html += '</div>';
+  });
+  cont.innerHTML = html;
+}
+
+async function gsAceptar(idPresupuesto, btn) {
+  if (!supabaseClient) return;
+  if (!confirm("Confirmas que aceptas este presupuesto? Se notificara al profesional y se actualizara el estado de la solicitud.")) return;
+  btn.disabled = true; btn.textContent = "Aceptando...";
+  var r = await supabaseClient.rpc("cliente_responder_presupuesto", {p_id_presupuesto:idPresupuesto, p_accion:"aceptar"});
+  if (r.error) { gsToast("Error: " + r.error.message, "error"); btn.disabled=false; btn.textContent="Aceptar este presupuesto"; return; }
+  gsToast("Presupuesto aceptado. El profesional fue notificado.", "success");
+  await gsCargarPresupuestos();
+}
+
+function gsAbrirRechazo(idPresupuesto) {
+  ID_PRES_RECHAZO = idPresupuesto;
+  document.getElementById("motivo-rechazo").value = "";
+  document.getElementById("modal-rechazo").classList.add("open");
+}
+
+function gsCerrarModal() {
+  document.getElementById("modal-rechazo").classList.remove("open");
+  ID_PRES_RECHAZO = null;
+}
+
+async function gsConfirmarRechazo() {
+  var motivo = document.getElementById("motivo-rechazo").value.trim() || null;
+  var btn = document.getElementById("btn-rechazar-confirm");
+  btn.disabled = true; btn.textContent = "Rechazando...";
+  var r = await supabaseClient.rpc("cliente_responder_presupuesto", {p_id_presupuesto:ID_PRES_RECHAZO, p_accion:"rechazar", p_motivo:motivo});
+  btn.disabled = false; btn.textContent = "Confirmar rechazo";
+  if (r.error) { gsToast("Error: " + r.error.message, "error"); return; }
+  gsToast("Presupuesto rechazado.", "success");
+  gsCerrarModal(); await gsCargarPresupuestos();
+}
+
+document.addEventListener("keydown", function(e) { if (e.key === "Escape") gsCerrarModal(); });
+document.getElementById("modal-rechazo").addEventListener("click", function(e) {
+  if (e.target === document.getElementById("modal-rechazo")) gsCerrarModal();
+});
+</script>
+<script src="../js/panel-life.js"></script><script src="../js/life.js"></script>
+</body>
+</html>

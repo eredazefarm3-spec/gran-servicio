@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Disponibilidad — Gran Servicio</title>
+<link rel="stylesheet" href="../css/style.css"><link rel="stylesheet" href="../css/gs-polish.css">
+<link rel="stylesheet" href="../css/dashboard.css"><link rel="stylesheet" href="../css/dashboard-v2.css">
+<link rel="stylesheet" href="../css/panel-life.css"><link rel="stylesheet" href="../css/responsive.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<link rel="stylesheet" href="../css/life.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar">
+    <a href="../index.html" class="logo"><img src="../img/logo.png" alt="Gran Servicio" class="logo-img"><span>GRAN SERVICIO</span></a>
+    <ul class="sidebar-nav"><li><a href="dashboard.html">Dashboard</a></li><li><a href="solicitudes-cercanas.html">Solicitudes cercanas</a></li><li><a href="crear-presupuesto.html">Crear presupuesto</a></li><li><a href="mis-propuestas.html">Mis propuestas</a></li><li><a href="mis-servicios.html">Mis servicios</a></li><li><a href="disponibilidad.html" class="active">Disponibilidad</a></li><li><a href="zonas.html">Zonas de cobertura</a></li><li><a href="mapa-demanda.html">Zonas con más trabajo</a></li><li><a href="resenas.html">Mis reseñas</a></li><li><a href="suscripcion.html">Suscripción</a></li><li><a href="transacciones.html">Transacciones</a></li><li><a href="mensajes.html">Mensajes</a></li><li><a href="notificaciones.html">Notificaciones</a></li><li><a href="reclamos.html">Reclamos</a></li><li><a href="perfil.html">Perfil</a></li></ul>
+    <div class="sidebar-foot"><button class="btn btn-ghost btn-sm" style="color:#CFE0EE" onclick="gsLogout()">Cerrar sesión</button></div>
+  </aside>
+  <main class="app-main">
+    <div class="topbar">
+      <button class="hamburger-menu btn btn-outline btn-sm" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+      <div></div><div class="topbar-user"><span id="nombre-usuario"></span><div class="avatar" id="avatar-usuario">--</div></div>
+    </div>
+    <div class="main-content">
+      <h2>Disponibilidad</h2>
+      <div id="contenido-pagina" class="panel"><div class="loading-state"><div class="spinner"></div>Cargando…</div></div>
+    </div>
+  </main>
+</div>
+<script src="../js/supabase.js"></script>
+<script src="../js/auth.js"></script>
+<script>
+(async () => {
+  const sesion = await gsProtegerPagina("profesional");
+  if (!sesion) return;
+  document.getElementById("nombre-usuario").textContent = sesion.perfil.nombre + " " + sesion.perfil.apellido;
+  document.getElementById("avatar-usuario").textContent = (sesion.perfil.nombre[0] + (sesion.perfil.apellido[0]||"")).toUpperCase();
+  window.SESION = sesion;
+  window.dispatchEvent(new Event("gs-sesion-lista"));
+})();
+</script>
+<script>
+const DIAS = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
+window.addEventListener("gs-sesion-lista", async () => {
+  const { perfil } = window.SESION;
+  const { data } = await supabaseClient.from("disponibilidad_profesional").select("*").eq("id_profesional", perfil.id_profesional);
+  const porDia = new Map((data||[]).map(d => [d.dia_semana, d]));
+
+  document.getElementById("contenido-pagina").innerHTML = DIAS.map((nombre, i) => {
+    const d = porDia.get(i);
+    return `<div class="form-row" style="align-items:center;border-bottom:1px solid var(--gris-100);padding:10px 0">
+      <label style="flex:0 0 120px;margin:0">${gsEscapeHtml(nombre)}</label>
+      <input type="checkbox" class="chk-dia" data-dia="${i}" ${d?.disponible ? "checked":""}>
+      <input type="time" class="inp-desde" data-dia="${i}" value="${d?.hora_desde?.slice(0,5) || "09:00"}">
+      <input type="time" class="inp-hasta" data-dia="${i}" value="${d?.hora_hasta?.slice(0,5) || "18:00"}">
+    </div>`;
+  }).join("") + `<button class="btn btn-primary" style="margin-top:16px" onclick="gsGuardarDisponibilidad()">Guardar disponibilidad</button>`;
+});
+
+async function gsGuardarDisponibilidad() {
+  const { perfil } = window.SESION;
+  for (let i = 0; i < 7; i++) {
+    const disponible = document.querySelector(`.chk-dia[data-dia="${i}"]`).checked;
+    const hora_desde = document.querySelector(`.inp-desde[data-dia="${i}"]`).value;
+    const hora_hasta = document.querySelector(`.inp-hasta[data-dia="${i}"]`).value;
+    await supabaseClient.from("disponibilidad_profesional").upsert({
+      id_profesional: perfil.id_profesional, dia_semana: i, hora_desde, hora_hasta, disponible
+    }, { onConflict: "id_profesional,dia_semana" });
+  }
+  gsToast("Disponibilidad guardada.", "success");
+}
+</script>
+<script src="../js/panel-life.js"></script><script src="../js/life.js"></script>
+</body></html>

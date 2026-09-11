@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mi perfil — Gran Servicio</title>
+<link rel="stylesheet" href="../css/style.css"><link rel="stylesheet" href="../css/gs-polish.css">
+<link rel="stylesheet" href="../css/dashboard.css"><link rel="stylesheet" href="../css/dashboard-v2.css">
+<link rel="stylesheet" href="../css/panel-life.css"><link rel="stylesheet" href="../css/responsive.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<link rel="stylesheet" href="../css/life.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar">
+    <a href="../index.html" class="logo"><img src="../img/logo.png" alt="Gran Servicio" class="logo-img"><span>GRAN SERVICIO</span></a>
+    <ul class="sidebar-nav"><li><a href="dashboard.html">Dashboard</a></li><li><a href="solicitudes.html">Mis solicitudes</a></li><li><a href="crear-solicitud.html">Solicitar servicio</a></li><li><a href="presupuesto.html">Presupuestos</a></li><li><a href="propuestas.html">Propuestas</a></li><li><a href="pagos.html">Pagos</a></li><li><a href="resenas.html">Reseñas</a></li><li><a href="reclamos.html">Reclamos</a></li><li><a href="mensajes.html">Mensajes</a></li><li><a href="notificaciones.html">Notificaciones</a></li><li><a href="perfil.html" class="active">Mi perfil</a></li></ul>
+    <div class="sidebar-foot"><button class="btn btn-ghost btn-sm" style="color:#CFE0EE" onclick="gsLogout()">Cerrar sesión</button></div>
+  </aside>
+  <main class="app-main">
+    <div class="topbar">
+      <button class="hamburger-menu btn btn-outline btn-sm" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+      <div></div><div class="topbar-user"><span id="nombre-usuario"></span><div class="avatar" id="avatar-usuario">--</div></div>
+    </div>
+    <div class="main-content">
+      <h2>Mi perfil</h2>
+      <div id="contenido-pagina" class="panel"><div class="loading-state"><div class="spinner"></div>Cargando…</div></div>
+    </div>
+  </main>
+</div>
+<script src="../js/supabase.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/realtime.js"></script>
+<script>
+(async () => {
+  const sesion = await gsProtegerPagina("cliente");
+  if (!sesion) return;
+  document.getElementById("nombre-usuario").textContent = sesion.perfil.nombre + " " + sesion.perfil.apellido;
+  document.getElementById("avatar-usuario").textContent = (sesion.perfil.nombre[0] + (sesion.perfil.apellido[0]||"")).toUpperCase();
+  window.SESION = sesion;
+  window.dispatchEvent(new Event("gs-sesion-lista"));
+})();
+</script>
+<script>
+window.addEventListener("gs-sesion-lista", () => {
+  const p = window.SESION.perfil;
+  document.getElementById("contenido-pagina").innerHTML = `
+    <div class="form-row">
+      <div class="form-group"><label>Nombre</label><input type="text" id="p-nombre" value="${gsEscapeHtml(p.nombre)}"></div>
+      <div class="form-group"><label>Apellido</label><input type="text" id="p-apellido" value="${gsEscapeHtml(p.apellido)}"></div>
+    </div>
+    <div class="form-group"><label>Teléfono</label><input type="tel" id="p-telefono" value="${gsEscapeHtml(p.telefono||"")}"></div>
+    <div class="form-group"><label>Email</label><input type="email" value="${gsEscapeHtml(p.email)}" disabled></div>
+    <button class="btn btn-primary" onclick="gsGuardarPerfilCliente()">Guardar cambios</button>`;
+});
+async function gsGuardarPerfilCliente(){
+  const { perfil } = window.SESION;
+  const nombre = document.getElementById("p-nombre").value;
+  const apellido = document.getElementById("p-apellido").value;
+  const telefono = document.getElementById("p-telefono").value;
+  const { error } = await supabaseClient.from("usuario_cliente").update({ nombre, apellido, telefono }).eq("id_cliente", perfil.id_cliente);
+  if (error) gsToast("Error al guardar: "+error.message, "error"); else gsToast("Perfil actualizado.", "success");
+}
+</script>
+<script src="../js/panel-life.js"></script><script src="../js/life.js"></script>
+</body></html>

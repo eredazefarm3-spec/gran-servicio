@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><meta name="theme-color" content="#0B2E4F"><title>Verificación profesional — Gran Servicio</title>
+<link rel="stylesheet" href="../css/style.css"><link rel="stylesheet" href="../css/gs-polish.css"><link rel="stylesheet" href="../css/panel-life.css"><link rel="stylesheet" href="../css/responsive.css"><link rel="stylesheet" href="../css/life.css"><style>
+.gs-verif-page{min-height:100vh;display:grid;place-items:center;padding:28px;background:radial-gradient(circle at top,#14578b 0,#0b2e4f 45%,#071f36 100%)}
+.gs-verif-card{width:min(720px,100%);background:rgba(7,38,66,.94);border:1px solid rgba(255,145,25,.45);border-radius:24px;padding:36px;box-shadow:0 24px 70px rgba(0,0,0,.3)}
+.gs-verif-brand{display:flex;align-items:center;gap:12px;font-weight:900;color:#fff;font-size:1.2rem;margin-bottom:28px}.gs-verif-brand img{width:58px;height:58px;object-fit:contain}
+.gs-verif-icon{width:74px;height:74px;border-radius:22px;display:grid;place-items:center;background:rgba(255,145,25,.15);border:1px solid rgba(255,145,25,.4);font-size:2rem;margin-bottom:18px}
+.gs-verif-card h1{margin:0 0 10px;color:#fff}.gs-verif-card p{color:#cfe0ee;line-height:1.6}.gs-verif-status{margin:22px 0;padding:18px;border-radius:16px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1)}
+.gs-verif-status strong{display:block;color:#fff;margin-bottom:5px}.gs-upload{margin-top:20px;padding:20px;border-radius:16px;background:rgba(0,0,0,.12);border:1px solid rgba(255,255,255,.1)}
+.gs-upload label{display:block;color:#fff;font-weight:700;margin-bottom:8px}.gs-upload input{width:100%;box-sizing:border-box}.gs-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
+.gs-reason{margin-top:14px;color:#ffd0cc;background:rgba(178,58,46,.14);border:1px solid rgba(248,113,113,.35);padding:14px;border-radius:12px}
+</style><link rel="stylesheet" href="../css/dashboard-v2.css"></head><body><main class="gs-verif-page"><section class="gs-verif-card">
+<div class="gs-verif-brand"><img src="../img/logo.png" alt="Gran Servicio"><span>GRAN SERVICIO</span></div>
+<div id="contenido"><div class="gs-verif-icon">⏳</div><h1>Cargando tu solicitud…</h1><p>Estamos comprobando el estado de tu cuenta.</p></div>
+</section></main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script><script src="../js/supabase.js"></script><script src="../js/auth.js"></script><script>
+(async()=>{
+ const cont=document.getElementById('contenido');
+ const {data:{session}}=await supabaseClient.auth.getSession();
+ if(!session){cont.innerHTML='<div class="gs-verif-icon">✉️</div><h1>Confirmá tu correo primero</h1><p>Tu cuenta profesional fue creada. Revisá el correo de verificación de Gran Servicio y hacé clic en el enlace. Después iniciá sesión para continuar con la documentación.</p><div class="gs-actions"><a class="btn btn-accent" href="../login.html">Ir a iniciar sesión</a><a class="btn btn-outline" href="../index.html">Volver al inicio</a></div>';return;}
+ const emailConfirmado=!!session.user.email_confirmed_at;
+ const {data:p,error}=await supabaseClient.from('usuario_profesional').select('id_profesional,nombre,apellido,email,dni,cuit,id_rubro,certificado_url,estado_aprobacion,verificado,activo,motivo_rechazo,descripcion_rechazo,rubros(nombre)').eq('id_auth',session.user.id).maybeSingle();
+ if(error||!p){cont.innerHTML='<div class="gs-verif-icon">⚠️</div><h1>No pudimos cargar tu solicitud</h1><p>Intentá cerrar sesión e ingresar nuevamente. Si el problema continúa, contactá a soporte.</p>';return;}
+ if(p.estado_aprobacion==='aprobado'&&p.verificado&&p.activo){location.href='dashboard.html';return;}
+ let icon='⏳',title='Solicitud pendiente de revisión',text='Tu correo electrónico fue verificado correctamente. Ahora administración revisará tus datos y la documentación de tu oficio. Hasta que la solicitud sea aprobada no tendrás acceso al panel profesional.';
+ if(p.estado_aprobacion==='rechazado'){icon='⚠️';title='Tu solicitud necesita correcciones';text='Administración revisó tu solicitud y la rechazó. Podés corregir la documentación y volver a enviarla para revisión.';}
+ if(p.estado_aprobacion==='bloqueado'){icon='🔒';title='Cuenta bloqueada';text='Tu cuenta profesional está bloqueada. Contactá a soporte para conocer los pasos a seguir.';}
+ let upload='';
+ if(p.estado_aprobacion==='pendiente'||p.estado_aprobacion==='rechazado'){
+   upload=`<div class="gs-upload"><label for="certificado">Título o certificado del oficio</label><input id="certificado" type="file" accept=".pdf,image/png,image/jpeg,image/webp"><p style="font-size:.88rem;margin:8px 0 0">Máximo 10 MB. Administración podrá revisar este documento de forma privada.</p><button id="subir" class="btn btn-accent" style="margin-top:14px">${p.certificado_url?'Reemplazar documentación':'Subir documentación para revisión'}</button></div>`;
+ }
+ cont.innerHTML=`<div class="gs-verif-icon">${icon}</div><h1>${title}</h1><p>${text}</p><div class="gs-verif-status"><strong>Estado: ${p.estado_aprobacion==='aprobado'?'Aprobado':p.estado_aprobacion==='rechazado'?'Rechazado':p.estado_aprobacion==='bloqueado'?'Bloqueado':'Pendiente'}</strong><span>Rubro: ${gsEscapeHtml(p.rubros?.nombre||'Sin rubro')}</span>${p.certificado_url?'<br><span style="color:#8ee6ad">✓ Documentación recibida</span>':''}<br><span style="color:${emailConfirmado?'#8ee6ad':'#ffd27a'}">${emailConfirmado?'✓ Correo verificado':'✉️ Correo pendiente de verificación'}</span></div>${p.motivo_rechazo?`<div class="gs-reason"><strong>Motivo informado por administración:</strong><br>${gsEscapeHtml(p.motivo_rechazo)}${p.descripcion_rechazo?'<br>'+gsEscapeHtml(p.descripcion_rechazo):''}</div>`:''}${upload}<div class="gs-actions"><button class="btn btn-outline" onclick="gsLogout()">Cerrar sesión</button><a class="btn btn-outline" href="../index.html">Volver al inicio</a></div>`;
+ const btn=document.getElementById('subir'); if(!btn)return;
+ btn.onclick=async()=>{const input=document.getElementById('certificado');if(!input.files?.length){gsToast('Seleccioná el título o certificado.','error');return;}const file=input.files[0];if(file.size>10*1024*1024){gsToast('El archivo supera el máximo de 10 MB.','error');return;}btn.disabled=true;btn.textContent='Subiendo…';const ext=(file.name.split('.').pop()||'bin').toLowerCase();const path=`${session.user.id}/titulo_inicial_${Date.now()}.${ext}`;const up=await supabaseClient.storage.from('professional-certificados').upload(path,file,{upsert:false});if(up.error){gsToast('No se pudo subir el documento: '+up.error.message,'error');btn.disabled=false;btn.textContent='Reintentar';return;}const updb=await supabaseClient.rpc('profesional_reenviar_verificacion',{p_certificado_url:path});if(updb.error||updb.data?.error){gsToast('El archivo se subió pero no pudimos registrar la solicitud: '+(updb.error?.message||updb.data?.error||'Error desconocido'),'error');return;}gsToast('Documentación enviada. Administración podrá revisarla.','success');setTimeout(()=>location.reload(),700);};
+})();
+</script><script src="../js/panel-life.js"></script><script src="../js/life.js"></script></body></html>

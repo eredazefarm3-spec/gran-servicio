@@ -1,0 +1,277 @@
+/* ============================================================
+   GRAN SERVICIO — RESPONSIVE MOBILE-FIRST COMPLETO
+   Mobile-first: estilos base para movil, se agrandan en desktop.
+   Breakpoints: 480px (sm), 768px (md), 1024px (lg)
+   ============================================================ */
+
+/* ──────────────── RESET Y UTILIDADES TOUCH ──────────────── */
+*, *::before, *::after { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+/* Minimum tap target 44x44px (WCAG 2.5.5) */
+button, a, [role="button"], select, input[type="checkbox"], input[type="radio"] {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Prevenir zoom en inputs iOS */
+input, select, textarea { font-size: 16px !important; }
+
+/* ──────────────── NAVBAR ──────────────── */
+.navbar { position: sticky; top: 0; z-index: 100; }
+
+/* Nav links ocultos en movil, se abren con toggle */
+.nav-links {
+  display: none;
+  position: absolute;
+  top: 64px; left: 0; right: 0;
+  background: var(--azul-oscuro);
+  border-bottom: 1px solid rgba(255,255,255,.1);
+  flex-direction: column;
+  padding: 12px 20px 16px;
+  gap: 4px;
+  z-index: 200;
+  box-shadow: 0 8px 24px rgba(7,31,54,.4);
+}
+.nav-links.open { display: flex; }
+.nav-toggle { display: block !important; }
+
+.nav-links a {
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 1rem;
+  color: #CFE0EE;
+}
+.nav-links a:hover, .nav-links a:active { background: var(--naranja-medio); color: #fff; }
+
+.nav-actions { gap: 6px; }
+.nav-actions .btn { padding: 8px 12px; font-size: .85rem; min-height: 40px; }
+
+/* ──────────────── HERO ──────────────── */
+.hero { padding: 40px 0 32px; }
+.hero-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+.hero-grid > div:last-child { order: -1; }
+.gs-hero-visual img { border-radius: 16px; max-height: 220px; object-fit: cover; width: 100%; }
+h1 { font-size: clamp(1.75rem, 5.5vw, 2.75rem) !important; }
+.hero-actions { flex-direction: column; gap: 10px; }
+.hero-actions .btn { width: 100%; justify-content: center; }
+.search-box { flex-direction: column; }
+.search-box input { width: 100%; }
+.search-box button { width: 100%; }
+
+/* Trust strip: scroll horizontal */
+.gs-trust-strip {
+  display: flex;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  gap: 16px;
+  padding: 12px 0;
+  scrollbar-width: none;
+}
+.gs-trust-strip::-webkit-scrollbar { display: none; }
+.gs-trust-item { flex-shrink: 0; }
+
+/* ──────────────── GRIDS ──────────────── */
+.grid-3, .grid-2 { grid-template-columns: 1fr; gap: 14px; }
+.gs-feature-grid { grid-template-columns: 1fr; gap: 16px; }
+.gs-split { flex-direction: column; gap: 14px; }
+.gs-role-card { padding: 20px; }
+
+/* ──────────────── FORMULARIOS ──────────────── */
+.form-row { flex-direction: column; gap: 0; }
+input, select, textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 8px;
+}
+
+/* ──────────────── MAPAS ──────────────── */
+.map-wrap { height: 300px !important; }
+#map-inicio, #mapa-solicitud, #mapa-demanda, #mapa-cobertura {
+  height: 300px !important;
+}
+
+/* ──────────────── FOOTER ──────────────── */
+.footer-grid { grid-template-columns: 1fr; gap: 24px; }
+
+/* ──────────────── DASHBOARDS ──────────────── */
+.app-shell { display: block; }
+
+.sidebar {
+  position: fixed;
+  left: -270px;
+  top: 0;
+  width: 260px;
+  z-index: 300;
+  height: 100vh;
+  overflow-y: auto;
+  transition: left .22s cubic-bezier(.4,0,.2,1);
+  box-shadow: 4px 0 24px rgba(7,31,54,.35);
+}
+.sidebar.open { left: 0; }
+
+/* Overlay cuando sidebar abierto */
+.sidebar.open::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  left: 260px;
+  background: rgba(7,31,54,.55);
+  z-index: -1;
+}
+
+.hamburger-menu { display: flex !important; }
+
+.app-main { min-height: 100vh; }
+
+/* Stat grid */
+.stat-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.stat-card .value { font-size: 1.5rem; }
+
+/* Panel tables: scroll horizontal */
+.panel table, table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.panel table th, .panel table td { white-space: nowrap; }
+
+/* Main content padding */
+.main-content { padding: 16px; }
+
+/* Topbar */
+.topbar { padding: 0 12px; height: 56px; }
+
+/* ──────────────── AUTH PAGE ──────────────── */
+.auth-shell {
+  min-height: 100vh;
+  flex-direction: column !important;
+  border-radius: 0 !important;
+}
+.auth-panel { width: 100% !important; min-height: auto !important; }
+.auth-overlay { display: none !important; }
+.auth-content { padding: 24px 20px 32px; }
+.account-types { flex-direction: column; }
+.account-type { padding: 12px; }
+
+/* ──────────────── CARRUSEL HERO ──────────────── */
+.gs-carousel { position: relative; overflow: hidden; border-radius: 16px; }
+.gs-carousel-inner { display: flex; transition: transform .5s ease; }
+.gs-carousel-slide { flex: 0 0 100%; }
+.gs-carousel-slide img { width: 100%; height: 220px; object-fit: cover; }
+.gs-carousel-controls { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; }
+.gs-carousel-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: rgba(255,255,255,.45); border: none; cursor: pointer; padding: 0;
+  transition: background .2s; min-height: 0; min-width: 0;
+}
+.gs-carousel-dot.active { background: var(--naranja-medio); }
+
+/* ──────────────── MODALES ──────────────── */
+.gs-modal { max-width: 100% !important; margin: 0 10px; }
+.gs-modal-overlay { align-items: flex-end !important; padding: 0 !important; }
+.gs-modal { border-bottom-left-radius: 0 !important; border-bottom-right-radius: 0 !important; padding-bottom: 32px !important; }
+
+/* ──────────────── TOASTS ──────────────── */
+#toast-container {
+  position: fixed !important;
+  bottom: 80px !important;
+  left: 12px !important;
+  right: 12px !important;
+  z-index: 9999;
+}
+.toast { width: 100%; box-sizing: border-box; }
+
+/* ──────────────── PRESUPUESTOS ──────────────── */
+.pres-desglose { grid-template-columns: 1fr 1fr; }
+.pres-acciones { flex-direction: column; }
+.pres-acciones .btn { width: 100%; justify-content: center; }
+
+/* ──────────────── APROBACION ──────────────── */
+.prof-card-head { flex-direction: column; text-align: center; }
+.prof-actions { flex-direction: column; }
+.prof-actions .btn { width: 100%; justify-content: center; }
+
+/* ──────────────── safe-area iOS ──────────────── */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .main-content { padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
+  #toast-container { bottom: calc(80px + env(safe-area-inset-bottom)) !important; }
+}
+
+/* ──────────────── REDUCIR MOTION ──────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+  .gs-carousel-inner { transition: none !important; }
+}
+
+/* ══════════════════════════════════════════════════════════
+   SM: >= 480px
+   ══════════════════════════════════════════════════════════ */
+@media (min-width: 480px) {
+  .hero-actions { flex-direction: row; flex-wrap: wrap; }
+  .hero-actions .btn { width: auto; }
+  .search-box { flex-direction: row; }
+  .search-box input { flex: 1; }
+  .search-box button { width: auto; }
+  .gs-carousel-slide img { height: 280px; }
+  .stat-grid { grid-template-columns: repeat(2, 1fr); }
+  .pres-acciones { flex-direction: row; }
+  .pres-acciones .btn { width: auto; }
+}
+
+/* ══════════════════════════════════════════════════════════
+   MD: >= 768px
+   ══════════════════════════════════════════════════════════ */
+@media (min-width: 768px) {
+  .nav-links { display: flex; position: static; flex-direction: row; background: none; border: none; padding: 0; box-shadow: none; }
+  .nav-toggle { display: none !important; }
+
+  .hero { padding: 64px 0 48px; }
+  .hero-grid { flex-direction: row; align-items: center; }
+  .hero-grid > div:last-child { order: 0; }
+  .gs-hero-visual img { max-height: 400px; }
+
+  .grid-3 { grid-template-columns: repeat(2, 1fr); }
+  .grid-2 { grid-template-columns: repeat(2, 1fr); }
+  .gs-feature-grid { grid-template-columns: repeat(3, 1fr); }
+  .gs-split { flex-direction: row; }
+
+  .footer-grid { grid-template-columns: repeat(2, 1fr); }
+  .form-row { flex-direction: row; gap: 14px; }
+
+  .map-wrap { height: 400px !important; }
+  #map-inicio, #mapa-solicitud, #mapa-demanda, #mapa-cobertura { height: 400px !important; }
+
+  .app-shell { display: grid; grid-template-columns: 250px 1fr; }
+  .sidebar { position: sticky; left: auto; box-shadow: none; width: 250px; transition: none; }
+  .sidebar.open::after { display: none; }
+  .hamburger-menu { display: none !important; }
+
+  .stat-grid { grid-template-columns: repeat(3, 1fr); }
+
+  .gs-modal-overlay { align-items: center !important; padding: 20px !important; }
+  .gs-modal { border-radius: 16px !important; padding: 28px !important; max-width: 480px !important; }
+
+  .gs-carousel-slide img { height: 360px; }
+
+  #toast-container { bottom: 24px !important; left: auto !important; right: 24px !important; width: 360px; }
+  .toast { width: auto; }
+
+  .prof-card-head { flex-direction: row; text-align: left; }
+  .prof-actions { flex-direction: row; }
+  .prof-actions .btn { width: auto; }
+  .pres-desglose { grid-template-columns: repeat(4, 1fr); }
+
+  .auth-shell { flex-direction: row !important; }
+  .auth-overlay { display: block !important; }
+  .auth-panel { width: 50% !important; }
+}
+
+/* ══════════════════════════════════════════════════════════
+   LG: >= 1024px
+   ══════════════════════════════════════════════════════════ */
+@media (min-width: 1024px) {
+  .grid-3 { grid-template-columns: repeat(3, 1fr); }
+  .stat-grid { grid-template-columns: repeat(4, 1fr); }
+  .footer-grid { grid-template-columns: repeat(4, 1fr); }
+  .gs-carousel-slide img { height: 420px; }
+}

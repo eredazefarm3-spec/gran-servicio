@@ -1,0 +1,50 @@
+<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Servicios — Gran Servicio</title><link rel="stylesheet" href="css/style.css"><link rel="stylesheet" href="css/responsive.css"><link rel="stylesheet" href="css/gs-polish.css"><link rel="stylesheet" href="css/life.css"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script></head><body>
+<nav class="navbar"><div class="container navbar-inner"><a href="/index.html" class="logo"><img src="/img/logo.png" alt="Gran Servicio" class="logo-img"><span>GRAN SERVICIO</span></a><div class="nav-links"><a href="/index.html">Inicio</a><a href="/como-funciona.html">Cómo funciona</a><a href="/servicios.html">Servicios</a><a href="/profesionales.html">Profesionales</a><a href="/sobre-nosotros.html">Nosotros</a><a href="/contacto.html">Contacto</a></div><div class="nav-actions"><a href="/login.html" class="btn btn-outline btn-sm">Ingresar</a><a href="/registro.html" class="btn btn-accent btn-sm">Crear cuenta</a></div><button class="nav-toggle">☰</button></div></nav>
+<header class="page-hero"><div class="container"><span class="eyebrow">Catálogo</span><h1>Encontrá el servicio que necesitás.</h1><p class="lead">Explorá las categorías y publicá una solicitud para recibir propuestas de profesionales.</p></div></header>
+<section class="section"><div class="container">
+  <div id="filtro-categorias" class="cat-chip-row" style="margin-bottom:22px"><div class="loading-state"><div class="spinner"></div>Cargando categorías…</div></div>
+  <div class="search-box" style="max-width:680px;margin:0 auto 30px"><input id="filtro-servicio" type="search" placeholder="Buscar servicio…" aria-label="Buscar servicio"><button class="btn btn-primary" id="btn-buscar-servicio">Buscar</button></div>
+  <div id="lista-servicios" class="grid-3"><div class="loading-state"><div class="spinner"></div>Cargando servicios…</div></div>
+</div></section>
+<footer class="footer"><div class="container footer-bottom">© 2026 Gran Servicio · <a href="/privacidad.html">Privacidad</a> · <a href="/terminos.html">Términos</a></div></footer>
+<script src="js/supabase.js"></script><script src="js/auth.js"></script><script src="js/script.js"></script><script>
+let gsServicios=[];let gsCategorias=[];let gsCategoriaActiva=null;
+
+function renderCategorias(){
+  const wrap=document.getElementById('filtro-categorias');
+  const chips=[`<button class="cat-chip${gsCategoriaActiva===null?' active':''}" data-cat="">Todas</button>`]
+    .concat(gsCategorias.map(c=>`<button class="cat-chip${gsCategoriaActiva===c.id_categoria?' active':''}" data-cat="${c.id_categoria}">${gsEscapeHtml(c.nombre)}</button>`));
+  wrap.innerHTML=chips.join('');
+  wrap.querySelectorAll('.cat-chip').forEach(btn=>btn.addEventListener('click',()=>{
+    gsCategoriaActiva=btn.dataset.cat?Number(btn.dataset.cat):null;
+    renderCategorias();renderServicios();
+  }));
+}
+
+function renderServicios(){
+  const f=document.getElementById('filtro-servicio').value.trim().toLowerCase();
+  const lista=gsServicios.filter(s=>{
+    const coincideCategoria=gsCategoriaActiva===null||s.id_categoria===gsCategoriaActiva;
+    const coincideTexto=(s.nombre+' '+(s.descripcion||'')+' '+(s.categorias_servicio?.nombre||'')).toLowerCase().includes(f);
+    return coincideCategoria&&coincideTexto;
+  });
+  document.getElementById('lista-servicios').innerHTML=lista.length?lista.map(s=>`<article class="card"><span class="badge badge-naranja">${gsEscapeHtml(s.categorias_servicio?.nombre||'Servicio')}</span><h3 style="margin-top:14px">${gsEscapeHtml(s.nombre)}</h3><p>${gsEscapeHtml(s.descripcion||'Servicio disponible a través de profesionales de Gran Servicio.')}</p><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:18px"><strong style="color:var(--gs-orange-300)">${s.tarifa_referencial!=null?'Desde $'+Number(s.tarifa_referencial).toLocaleString('es-AR'):'Consultar'}</strong><a href="/login.html?next=%2Fcliente%2Fcrear-solicitud.html%3Fservicio=${encodeURIComponent(s.id_servicio)}" class="btn btn-accent btn-sm">Solicitar</a></div></article>`).join(''):'<div class="empty-state" style="grid-column:1/-1">No encontramos servicios con esa búsqueda.</div>';
+}
+
+(async()=>{
+  if(!supabaseClient)return;
+  const [{data:cats,error:errCats},{data:servs,error:errServs}]=await Promise.all([
+    supabaseClient.from('categorias_servicio').select('id_categoria,nombre,descripcion').eq('activo',true).order('nombre'),
+    supabaseClient.from('servicios').select('id_servicio,id_categoria,nombre,descripcion,tarifa_referencial,categorias_servicio(nombre)').eq('activo',true).order('nombre')
+  ]);
+  if(errCats||errServs){
+    document.getElementById('filtro-categorias').innerHTML='';
+    document.getElementById('lista-servicios').innerHTML='<div class="empty-state" style="grid-column:1/-1">No pudimos cargar el catálogo en este momento.</div>';
+    return;
+  }
+  gsCategorias=cats||[];gsServicios=servs||[];
+  renderCategorias();renderServicios();
+})();
+document.getElementById('btn-buscar-servicio').addEventListener('click',renderServicios);
+document.getElementById('filtro-servicio').addEventListener('input',renderServicios);
+</script><script src="js/life.js"></script></body></html>

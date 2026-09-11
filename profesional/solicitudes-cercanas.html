@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Solicitudes cercanas — Gran Servicio</title>
+<link rel="stylesheet" href="../css/style.css"><link rel="stylesheet" href="../css/gs-polish.css">
+<link rel="stylesheet" href="../css/dashboard.css"><link rel="stylesheet" href="../css/dashboard-v2.css">
+<link rel="stylesheet" href="../css/maps.css">
+<link rel="stylesheet" href="../css/panel-life.css"><link rel="stylesheet" href="../css/responsive.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<link rel="stylesheet" href="../css/life.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar">
+    <a href="../index.html" class="logo"><img src="../img/logo.png" alt="Gran Servicio" class="logo-img"><span>GRAN SERVICIO</span></a>
+    <ul class="sidebar-nav">
+      <li><a href="dashboard.html">Dashboard</a></li>
+      <li><a href="solicitudes-cercanas.html" class="active">Solicitudes cercanas</a></li>
+      <li><a href="crear-presupuesto.html">Crear presupuesto</a></li><li><a href="mis-propuestas.html">Mis propuestas</a></li>
+      <li><a href="mis-servicios.html">Mis servicios</a></li>
+      <li><a href="disponibilidad.html">Disponibilidad</a></li>
+      <li><a href="zonas.html">Zonas de cobertura</a></li>
+      <li><a href="mapa-demanda.html">Zonas con más trabajo</a></li>
+      <li><a href="resenas.html">Mis reseñas</a></li>
+      <li><a href="suscripcion.html">Suscripción</a></li>
+      <li><a href="transacciones.html">Transacciones</a></li><li><a href="mensajes.html">Mensajes</a></li><li><a href="notificaciones.html">Notificaciones</a></li><li><a href="reclamos.html">Reclamos</a></li><li><a href="perfil.html">Perfil</a></li>
+    </ul>
+    <div class="sidebar-foot"><button class="btn btn-ghost btn-sm" style="color:#CFE0EE" onclick="gsLogout()">Cerrar sesión</button></div>
+  </aside>
+
+  <main class="app-main">
+    <div class="topbar"><h3 style="margin:0">Solicitudes cercanas</h3><div></div></div>
+    <div class="main-content">
+      <div class="map-wrap" style="margin-bottom:20px"><div id="map-cercanas"></div></div>
+      <div id="lista-solicitudes"><div class="loading-state"><div class="spinner"></div>Buscando solicitudes cercanas…</div></div>
+    </div>
+  </main>
+</div>
+
+<script src="../js/supabase.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/geolocation.js"></script>
+<script src="../js/mapas.js"></script>
+<script src="../js/realtime.js"></script>
+<script>
+let MAPA, PROF, MI_UBICACION;
+
+(async () => {
+  const sesion = await gsProtegerPagina("profesional");
+  if (!sesion) return;
+  PROF = sesion.perfil;
+
+  MAPA = gsCrearMapa("map-cercanas", { zoom: PROF.latitud ? 13 : 8, centro: PROF.latitud ? { lat: PROF.latitud, lng: PROF.longitud } : undefined });
+
+  gsCargarGeografiaCordoba(MAPA);
+
+  MI_UBICACION = await gsObtenerUbicacionActual() || (PROF.latitud ? { lat: PROF.latitud, lng: PROF.longitud } : null);
+  if (MI_UBICACION) {
+    gsAgregarMarcador(MAPA, { ...MI_UBICACION, titulo: "Vos", tipo: "profesional" });
+    gsCentrarMapa(MAPA, MI_UBICACION, 12);
+    gsActualizarUbicacionProfesional(PROF.id_profesional, MI_UBICACION);
+    gsSeguirUbicacion(async (pos) => {
+      MI_UBICACION = pos;
+      await gsActualizarUbicacionProfesional(PROF.id_profesional, pos);
+      await gsGuardarUbicacionTiempoReal({idAuth: PROF.id_auth, tipoUsuario:"profesional", lat:pos.lat, lng:pos.lng});
+    });
+  }
+
+  const { data: misServicios, error: msError } = await supabaseClient.from("profesional_servicio").select("id_servicio").eq("id_profesional", PROF.id_profesional).eq("activo", true).eq("estado_aprobacion", "aprobado");
+  if (msError) { console.error(msError); }
+  const idsServicio = (misServicios || []).map(s => s.id_servicio);
+
+  const cont = document.getElementById("lista-solicitudes");
+  if (!idsServicio.length) {
+    cont.innerHTML = '<div class="empty-state">Todavía no configuraste tus servicios. <a href="mis-servicios.html">Agregalos acá</a> para ver solicitudes compatibles.</div>';
+    return;
+  }
+
+  const { data: solicitudes } = await supabaseClient
+    .from("solicitud_servicio")
+    .select("id_solicitud, descripcion, presupuesto_maximo, latitud, longitud, fecha_solicitud, servicios(nombre), barrios(nombre), estados(nombre)")
+    .in("id_servicio", idsServicio)
+    .order("fecha_solicitud", { ascending: false });
+
+  const nombresDisponibles = ["Publicada", "Propuestas recibidas", "Buscando profesional"];
+  const disponibles = (solicitudes || []).filter(s => nombresDisponibles.some(n => (s.estados?.nombre || "").trim().toLowerCase() === n.toLowerCase()));
+  if ((solicitudes || []).length && !disponibles.length) console.info("No hay solicitudes en estados publicados compatibles. Estados recibidos:", [...new Set((solicitudes||[]).map(s=>s.estados?.nombre).filter(Boolean))]);
+
+  if (!disponibles.length) {
+    cont.innerHTML = '<div class="empty-state">No hay solicitudes compatibles con tus servicios por ahora.</div>';
+    return;
+  }
+
+  const conDistancia = disponibles.map(s => ({
+    ...s,
+    distancia: (MI_UBICACION && s.latitud) ? gsDistanciaKm(MI_UBICACION, { lat: s.latitud, lng: s.longitud }) : null,
+  })).sort((a, b) => (a.distancia ?? 999) - (b.distancia ?? 999));
+
+  conDistancia.forEach(s => {
+    if (s.latitud) gsAgregarMarcador(MAPA, { lat: s.latitud, lng: s.longitud, titulo: s.servicios?.nombre, subtitulo: s.barrios?.nombre, tipo: "cliente" });
+  });
+
+  cont.innerHTML = conDistancia.map(s => `
+    <div class="card card-hover" style="margin-bottom:12px">
+      <div class="flex-between">
+        <div>
+          <span class="badge badge-azul">${gsEscapeHtml(s.servicios?.nombre || "Servicio")}</span>
+          <h3 style="margin:8px 0 4px">${gsEscapeHtml(s.descripcion.slice(0, 90))}</h3>
+          <p class="muted" style="margin:0">${gsEscapeHtml(s.barrios?.nombre || "Zona sin especificar")} ${s.distancia ? "· " + s.distancia.toFixed(1) + " km" : ""}</p>
+        </div>
+        <div style="text-align:right">
+          <p class="muted" style="margin:0 0 8px">${s.presupuesto_maximo ? "Presupuesto: $" + s.presupuesto_maximo : "Sin presupuesto definido"}</p>
+          <button class="btn btn-accent btn-sm" onclick="gsAbrirFormularioPropuesta('${s.id_solicitud}')">Enviar propuesta</button>
+        </div>
+      </div>
+      <div id="form-propuesta-${s.id_solicitud}" style="display:none;margin-top:14px" class="divider-top"></div>
+    </div>
+  `).join("");
+
+  gsEscucharSolicitudesNuevas((s) => {
+    if (idsServicio.includes(s.id_servicio)) {
+      gsToast("Nueva solicitud cercana: " + (s.descripcion || "").slice(0, 40), "info");
+    }
+  });
+})();
+
+function gsAbrirFormularioPropuesta(idSolicitud) {
+  const cont = document.getElementById("form-propuesta-" + idSolicitud);
+  if (cont.style.display === "block") { cont.style.display = "none"; return; }
+  cont.style.display = "block";
+  cont.innerHTML = `
+    <div class="form-row">
+      <div class="form-group"><label>Monto ($)</label><input type="number" id="monto-${idSolicitud}"></div>
+    </div>
+    <div class="form-group"><label>Mensaje para el cliente</label><textarea id="mensaje-${idSolicitud}" rows="2"></textarea></div>
+    <button class="btn btn-primary btn-sm" onclick="gsEnviarPropuesta('${idSolicitud}')">Confirmar propuesta</button>
+  `;
+}
+
+async function gsEnviarPropuesta(idSolicitud) {
+  const monto = Number(document.getElementById("monto-" + idSolicitud).value);
+  const mensaje = document.getElementById("mensaje-" + idSolicitud).value;
+  if (!Number.isFinite(monto) || monto <= 0) { gsToast("Ingresá un monto válido.", "error"); return; }
+
+  const { data: estado } = await supabaseClient.from("estados").select("id_estado").eq("tipo_entidad", "propuesta").eq("nombre", "Enviada").single();
+
+  const { error } = await supabaseClient.from("propuestas_profesional").insert({
+    id_solicitud: idSolicitud,
+    id_profesional: PROF.id_profesional,
+    monto, mensaje,
+    id_estado: estado?.id_estado,
+  });
+
+  if (error) { gsToast("No se pudo enviar la propuesta: " + error.message, "error"); return; }
+  gsToast("Propuesta enviada correctamente.", "success");
+  document.getElementById("form-propuesta-" + idSolicitud).style.display = "none";
+}
+</script>
+<script src="../js/panel-life.js"></script><script src="../js/life.js"></script>
+</body>
+</html>

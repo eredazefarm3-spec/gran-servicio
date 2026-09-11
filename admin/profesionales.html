@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Profesionales — Gran Servicio</title>
+<link rel="stylesheet" href="../css/style.css"><link rel="stylesheet" href="../css/gs-polish.css">
+<link rel="stylesheet" href="../css/dashboard.css"><link rel="stylesheet" href="../css/dashboard-v2.css">
+<link rel="stylesheet" href="../css/panel-life.css"><link rel="stylesheet" href="../css/responsive.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<link rel="stylesheet" href="../css/life.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar">
+    <a href="../index.html" class="logo"><img src="../img/logo.png" alt="Gran Servicio" class="logo-img"><span>GRAN SERVICIO</span></a>
+    <ul class="sidebar-nav"><li><a href="dashboard.html">Dashboard</a></li><li><a href="clientes.html">Clientes</a></li><li><a href="profesionales.html" class="active">Profesionales</a></li><li><a href="empleados.html">Empleados</a></li><li><a href="solicitudes.html">Solicitudes</a></li><li><a href="propuestas.html">Propuestas</a></li><li><a href="asignaciones.html">Asignaciones</a></li><li><a href="pagos.html">Pagos</a></li><li><a href="transacciones.html">Transacciones</a></li><li><a href="facturas.html">Facturas</a></li><li><a href="comisiones.html">Comisiones</a></li><li><a href="reclamos.html">Reclamos</a></li><li><a href="soporte.html">Soporte</a></li><li><a href="suscripciones.html">Suscripciones</a></li><li><a href="geografia.html">Geografía</a></li><li><a href="catalogos.html">Catálogos</a></li></ul>
+    <div class="sidebar-foot"><button class="btn btn-ghost btn-sm" style="color:#CFE0EE" onclick="gsLogout()">Cerrar sesión</button></div>
+  </aside>
+  <main class="app-main">
+    <div class="topbar">
+      <button class="hamburger-menu btn btn-outline btn-sm" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+      <div></div><div class="topbar-user"><span id="nombre-usuario"></span><div class="avatar" id="avatar-usuario">--</div></div>
+    </div>
+    <div class="main-content">
+      <h2>Profesionales</h2>
+      <div id="contenido-pagina" class="panel"><div class="loading-state"><div class="spinner"></div>Cargando…</div></div>
+    </div>
+  </main>
+</div>
+<script src="../js/supabase.js"></script>
+<script src="../js/auth.js"></script>
+<script>
+(async () => {
+  const sesion = await gsProtegerPagina("empleado");
+  if (!sesion) return;
+  document.getElementById("nombre-usuario").textContent = sesion.perfil.nombre + " " + sesion.perfil.apellido;
+  document.getElementById("avatar-usuario").textContent = (sesion.perfil.nombre[0] + (sesion.perfil.apellido[0]||"")).toUpperCase();
+  window.SESION = sesion;
+  window.dispatchEvent(new Event("gs-sesion-lista"));
+})();
+</script>
+<script>
+window.addEventListener("gs-sesion-lista", async () => {
+  const { data } = await supabaseClient.from("usuario_profesional")
+    .select("id_profesional, nombre, apellido, email, verificado, calificacion_promedio, activo, estado_aprobacion, rubros(nombre)").order("nombre");
+  
+  const getBadgeEstado = (estado) => {
+    switch (estado) {
+      case "aprobado": return '<span class="badge badge-exito">Aprobado</span>';
+      case "pendiente": return '<span class="badge badge-alerta">Pendiente</span>';
+      case "rechazado": return '<span class="badge badge-error">Rechazado</span>';
+      case "bloqueado": return '<span class="badge" style="background:var(--error);color:white">Bloqueado</span>';
+      default: return `<span class="badge badge-neutro">${estado || "—"}</span>`;
+    }
+  };
+
+  document.getElementById("contenido-pagina").innerHTML = (data && data.length) ? `<table><thead><tr>
+    <th>Nombre</th><th>Rubro</th><th>Email</th><th>Calificación</th><th>Aprobación</th><th>Acción</th></tr></thead><tbody>
+    ${data.map(p=>`<tr><td>${gsEscapeHtml(p.nombre)} ${gsEscapeHtml(p.apellido)}</td><td>${p.rubros?.nombre||"—"}</td><td>${gsEscapeHtml(p.email)}</td>
+    <td>★ ${p.calificacion_promedio ?? "—"}</td><td>${getBadgeEstado(p.estado_aprobacion)}</td>
+    <td><a href="aprobacion-profesionales.html" class="btn btn-outline btn-sm">Ver ficha</a></td></tr>`).join("")}
+    </tbody></table>` : '<div class="empty-state">Sin profesionales registrados todavía.</div>';
+});
+</script>
+<script src="../js/panel-life.js"></script><script src="../js/life.js"></script>
+</body></html>

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mis solicitudes — Gran Servicio</title>
+<link rel="stylesheet" href="../css/style.css"><link rel="stylesheet" href="../css/gs-polish.css">
+<link rel="stylesheet" href="../css/dashboard.css"><link rel="stylesheet" href="../css/dashboard-v2.css">
+<link rel="stylesheet" href="../css/panel-life.css"><link rel="stylesheet" href="../css/responsive.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<link rel="stylesheet" href="../css/life.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar">
+    <a href="../index.html" class="logo"><img src="../img/logo.png" alt="Gran Servicio" class="logo-img"><span>GRAN SERVICIO</span></a>
+    <ul class="sidebar-nav"><li><a href="dashboard.html">Dashboard</a></li><li><a href="solicitudes.html" class="active">Mis solicitudes</a></li><li><a href="crear-solicitud.html">Solicitar servicio</a></li><li><a href="presupuesto.html">Presupuestos</a></li><li><a href="propuestas.html">Propuestas</a></li><li><a href="pagos.html">Pagos</a></li><li><a href="resenas.html">Reseñas</a></li><li><a href="reclamos.html">Reclamos</a></li><li><a href="mensajes.html">Mensajes</a></li><li><a href="notificaciones.html">Notificaciones</a></li><li><a href="perfil.html">Mi perfil</a></li></ul>
+    <div class="sidebar-foot"><button class="btn btn-ghost btn-sm" style="color:#CFE0EE" onclick="gsLogout()">Cerrar sesión</button></div>
+  </aside>
+  <main class="app-main">
+    <div class="topbar">
+      <button class="hamburger-menu btn btn-outline btn-sm" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+      <div></div><div class="topbar-user"><span id="nombre-usuario"></span><div class="avatar" id="avatar-usuario">--</div></div>
+    </div>
+    <div class="main-content">
+      <h2>Mis solicitudes</h2>
+      <div id="contenido-pagina" class="panel"><div class="loading-state"><div class="spinner"></div>Cargando…</div></div>
+    </div>
+  </main>
+</div>
+<script src="../js/supabase.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/realtime.js"></script>
+<script>
+(async () => {
+  const sesion = await gsProtegerPagina("cliente");
+  if (!sesion) return;
+  document.getElementById("nombre-usuario").textContent = sesion.perfil.nombre + " " + sesion.perfil.apellido;
+  document.getElementById("avatar-usuario").textContent = (sesion.perfil.nombre[0] + (sesion.perfil.apellido[0]||"")).toUpperCase();
+  window.SESION = sesion;
+  window.dispatchEvent(new Event("gs-sesion-lista"));
+})();
+</script>
+<script>
+window.addEventListener("gs-sesion-lista", async () => {
+  const { perfil } = window.SESION;
+  const { data } = await supabaseClient
+    .from("solicitud_servicio")
+    .select("id_solicitud, descripcion, fecha_solicitud, presupuesto_maximo, estados(nombre), servicios(nombre), barrios(nombre)")
+    .eq("id_cliente", perfil.id_cliente)
+    .order("fecha_solicitud", { ascending: false });
+
+  const cont = document.getElementById("contenido-pagina");
+  if (!data || !data.length) { cont.innerHTML = '<div class="empty-state">Todavía no creaste ninguna solicitud. <a href="crear-solicitud.html">Creá la primera</a>.</div>'; return; }
+
+  cont.innerHTML = `<table><thead><tr><th>Servicio</th><th>Descripción</th><th>Zona</th><th>Presupuesto</th><th>Estado</th></tr></thead><tbody>
+    ${data.map(s => `<tr>
+      <td>${gsEscapeHtml(s.servicios?.nombre || "—")}</td>
+      <td>${gsEscapeHtml((s.descripcion||"").slice(0,60))}</td>
+      <td>${gsEscapeHtml(s.barrios?.nombre || "—")}</td>
+      <td>${s.presupuesto_maximo ? "$"+s.presupuesto_maximo : "—"}</td>
+      <td><span class="badge badge-azul">${gsEscapeHtml(s.estados?.nombre || "—")}</span></td>
+    </tr>`).join("")}
+  </tbody></table>`;
+});
+</script>
+<script src="../js/panel-life.js"></script><script src="../js/life.js"></script>
+</body></html>

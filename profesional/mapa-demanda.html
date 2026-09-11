@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zonas con más trabajo — Gran Servicio</title>
+<link rel="stylesheet" href="../css/style.css"><link rel="stylesheet" href="../css/gs-polish.css">
+<link rel="stylesheet" href="../css/dashboard.css"><link rel="stylesheet" href="../css/dashboard-v2.css">
+<link rel="stylesheet" href="../css/maps.css">
+<link rel="stylesheet" href="../css/panel-life.css"><link rel="stylesheet" href="../css/responsive.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<link rel="stylesheet" href="../css/life.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar">
+    <a href="../index.html" class="logo"><img src="../img/logo.png" alt="Gran Servicio" class="logo-img"><span>GRAN SERVICIO</span></a>
+    <ul class="sidebar-nav">
+      <li><a href="dashboard.html">Dashboard</a></li>
+      <li><a href="solicitudes-cercanas.html">Solicitudes cercanas</a></li>
+      <li><a href="crear-presupuesto.html">Crear presupuesto</a></li><li><a href="mis-propuestas.html">Mis propuestas</a></li>
+      <li><a href="mis-servicios.html">Mis servicios</a></li>
+      <li><a href="disponibilidad.html">Disponibilidad</a></li>
+      <li><a href="zonas.html">Zonas de cobertura</a></li>
+      <li><a href="mapa-demanda.html" class="active">Zonas con más trabajo</a></li>
+      <li><a href="resenas.html">Mis reseñas</a></li>
+      <li><a href="suscripcion.html">Suscripción</a></li>
+    </ul>
+    <div class="sidebar-foot"><button class="btn btn-ghost btn-sm" style="color:#CFE0EE" onclick="gsLogout()">Cerrar sesión</button></div>
+  </aside>
+
+  <main class="app-main">
+    <div class="topbar"><h3 style="margin:0">Zonas con más trabajo</h3><div></div></div>
+    <div class="main-content">
+      <div class="form-row" style="max-width:520px">
+        <div class="form-group"><label>Servicio</label><select id="f-servicio"><option value="">Todos</option></select></div>
+        <div class="form-group"><label>Período</label>
+          <select id="f-periodo">
+            <option value="1">Últimas 24 horas</option>
+            <option value="7" selected>Últimos 7 días</option>
+            <option value="30">Últimos 30 días</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="map-wrap map-tall" style="margin-bottom:20px">
+        <div id="map-demanda"></div>
+        <div class="map-legend">
+          <div class="item"><span class="swatch" style="background:#BFE0FA"></span> Baja demanda</div>
+          <div class="item"><span class="swatch" style="background:#5FA9DD"></span> Demanda media</div>
+          <div class="item"><span class="swatch" style="background:#F4A25C"></span> Alta demanda</div>
+          <div class="item"><span class="swatch" style="background:#B44A11"></span> Muy alta demanda</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h3 style="margin:0">Ranking de zonas</h3></div>
+        <div id="ranking-zonas"><div class="loading-state"><div class="spinner"></div>Calculando demanda…</div></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="../js/supabase.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/mapas.js"></script>
+<script>
+let MAPA_D;
+(async () => {
+  const sesion = await gsProtegerPagina("profesional");
+  if (!sesion) return;
+
+  MAPA_D = gsCrearMapa("map-demanda", { zoom: 8 });
+  gsCargarGeografiaCordoba(MAPA_D);
+
+  const { data: servicios } = await supabaseClient.from("servicios").select("id_servicio, nombre").eq("activo", true);
+  document.getElementById("f-servicio").innerHTML += (servicios || []).map(s => `<option value="${s.id_servicio}">${gsEscapeHtml(s.nombre)}</option>`).join("");
+
+  document.getElementById("f-servicio").addEventListener("change", gsCalcularDemanda);
+  document.getElementById("f-periodo").addEventListener("change", gsCalcularDemanda);
+  gsCalcularDemanda();
+})();
+
+async function gsCalcularDemanda() {
+  const idServicio = document.getElementById("f-servicio").value;
+  const dias = parseInt(document.getElementById("f-periodo").value);
+  const desde = new Date(Date.now() - dias * 86400000).toISOString();
+
+  let query = supabaseClient.from("solicitud_servicio")
+    .select("id_solicitud, id_barrio, barrios(nombre, ciudades(nombre)), latitud, longitud")
+    .gte("fecha_solicitud", desde);
+  if (idServicio) query = query.eq("id_servicio", idServicio);
+
+  const { data } = await query;
+
+  // Agrupar por barrio
+  const conteos = {};
+  (data || []).forEach(s => {
+    const nombre = s.barrios?.nombre ? `${gsEscapeHtml(s.barrios.nombre)} (${gsEscapeHtml(s.barrios.ciudades?.nombre || "")})` : "Zona sin especificar";
+    if (!conteos[nombre]) conteos[nombre] = { count: 0, lat: s.latitud, lng: s.longitud };
+    conteos[nombre].count++;
+  });
+
+  const ranking = Object.entries(conteos).map(([nombre, v]) => ({ nombre, ...v })).sort((a, b) => b.count - a.count);
+
+  // Limpiar capas de demanda previas (dejar solo tile layer)
+  MAPA_D.eachLayer(l => { if (l instanceof L.Circle) MAPA_D.removeLayer(l); });
+
+  const max = ranking[0]?.count || 1;
+  ranking.forEach(z => {
+    if (!z.lat) return;
+    const ratio = z.count / max;
+    const nivel = ratio > 0.75 ? "muy_alta" : ratio > 0.5 ? "alta" : ratio > 0.25 ? "media" : "baja";
+    gsAgregarZonaDemanda(MAPA_D, { lat: z.lat, lng: z.lng, nivel, radio: 1500 + ratio * 3000 });
+  });
+
+  const cont = document.getElementById("ranking-zonas");
+  cont.innerHTML = ranking.length ? ranking.slice(0, 10).map((z, i) => `
+    <div class="list-row"><div>${i + 1}. ${gsEscapeHtml(z.nombre)}</div><strong>${z.count} solicitudes</strong></div>
+  `).join("") : '<div class="empty-state">Todavía no hay suficientes solicitudes para generar estadísticas.</div>';
+}
+</script>
+<script src="../js/panel-life.js"></script><script src="../js/life.js"></script>
+</body>
+</html>

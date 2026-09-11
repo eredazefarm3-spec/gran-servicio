@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0B2E4F">
+<title>Crear presupuesto - Gran Servicio</title>
+<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="../css/gs-polish.css">
+<link rel="stylesheet" href="../css/dashboard.css"><link rel="stylesheet" href="../css/dashboard-v2.css">
+<link rel="stylesheet" href="../css/panel-life.css"><link rel="stylesheet" href="../css/responsive.css">
+<link rel="stylesheet" href="../css/life.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+.presup-calc{background:var(--azul-oscuro);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:20px;margin:20px 0}
+.presup-total{font-size:1.8rem;font-weight:800;color:var(--naranja-medio);margin-top:12px}
+.tipo-selector{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+.tipo-btn{flex:1;min-width:140px;padding:14px;border:2px solid rgba(255,255,255,.15);border-radius:10px;background:var(--azul-oscuro);color:#fff;cursor:pointer;text-align:center;font-weight:600;transition:border-color .15s}
+.tipo-btn.active{border-color:var(--naranja-medio);background:rgba(224,122,44,.1)}
+.info-banner{background:rgba(224,122,44,.12);border:1px solid var(--naranja-medio);border-radius:8px;padding:14px;margin-bottom:16px;font-size:.88rem}
+</style>
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar">
+    <a href="../index.html" class="logo"><img src="../img/logo.png" alt="Gran Servicio" class="logo-img"><span>GRAN SERVICIO</span></a>
+    <ul class="sidebar-nav">
+      <li><a href="dashboard.html">Dashboard</a></li>
+      <li><a href="solicitudes-cercanas.html">Solicitudes cercanas</a></li>
+      <li><a href="crear-presupuesto.html">Crear presupuesto</a></li><li><a href="mis-propuestas.html">Mis propuestas</a></li>
+      <li><a href="mis-servicios.html">Mis servicios</a></li>
+      <li><a href="disponibilidad.html">Disponibilidad</a></li>
+      <li><a href="zonas.html">Zonas de cobertura</a></li>
+      <li><a href="mapa-demanda.html">Zonas con más trabajo</a></li>
+      <li><a href="resenas.html">Mis reseñas</a></li>
+      <li><a href="suscripcion.html">Suscripción</a></li>
+      <li><a href="transacciones.html">Transacciones</a></li>
+      <li><a href="mensajes.html">Mensajes</a></li>
+      <li><a href="notificaciones.html">Notificaciones</a></li>
+      <li><a href="reclamos.html">Reclamos</a></li>
+      <li><a href="perfil.html">Perfil</a></li>
+    </ul>
+    <div class="sidebar-foot"><button class="btn btn-ghost btn-sm" style="color:#CFE0EE" onclick="gsLogout()">Cerrar sesión</button></div>
+  </aside>
+  <main class="app-main">
+    <div class="topbar">
+      <button class="hamburger-menu btn btn-outline btn-sm" onclick="document.getElementById('sidebar').classList.toggle('open')">&#9776;</button>
+      <div></div>
+      <div class="topbar-user"><span id="nombre-usuario"></span><div class="avatar" id="avatar-usuario">--</div></div>
+    </div>
+    <div class="main-content">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+        <a href="mis-propuestas.html" class="btn btn-outline btn-sm">&larr; Volver</a>
+        <h2 style="margin:0">Crear presupuesto o diagnóstico</h2>
+      </div>
+      <p class="muted">Enviá un presupuesto detallado o el resultado de un diagnostico al cliente.</p>
+
+      <div class="info-banner">
+        <strong>&#128161; Como funciona:</strong> Selecciona el tipo, completa los valores y el sistema calcula el total automaticamente.
+        El cliente podra aceptar o rechazar desde su panel. Una vez aceptado, el trabajo se confirma.
+      </div>
+
+      <div class="panel">
+        <div class="form-group" style="margin-bottom:20px">
+          <label style="display:block;margin-bottom:8px;font-weight:700">Solicitud asociada</label>
+          <select id="sel-solicitud" style="background:var(--azul-oscuro);border:1px solid rgba(255,255,255,.15);color:#fff;padding:10px 14px;border-radius:8px;font-size:.95rem;width:100%">
+            <option value="">Cargando solicitudes...</option>
+          </select>
+        </div>
+
+        <div class="form-group" style="margin-bottom:20px">
+          <label style="display:block;margin-bottom:8px;font-weight:700">Tipo de documento</label>
+          <div class="tipo-selector">
+            <button type="button" class="tipo-btn active" data-tipo="presupuesto" onclick="gsSeleccionarTipo(this)">
+              &#128179; Presupuesto<br><small style="font-weight:400;opacity:.7">Desglose de costos</small>
+            </button>
+            <button type="button" class="tipo-btn" data-tipo="diagnostico" onclick="gsSeleccionarTipo(this)">
+              &#128270; Diagnostico<br><small style="font-weight:400;opacity:.7">Informe del problema</small>
+            </button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="desc-presupuesto">Descripcion <span style="color:#f87171">*</span></label>
+          <textarea id="desc-presupuesto" rows="4" placeholder="Describe el trabajo a realizar, el estado del problema o el diagnostico encontrado..." style="width:100%;background:var(--azul-oscuro);border:1px solid rgba(255,255,255,.15);color:#fff;border-radius:8px;padding:10px;font-size:.9rem;font-family:inherit;box-sizing:border-box;resize:vertical"></textarea>
+        </div>
+
+        <div class="presup-calc" id="bloque-costos">
+          <h3 style="margin:0 0 16px">Desglose de costos</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="inp-materiales">Materiales ($)</label>
+              <input type="number" id="inp-materiales" min="0" step="100" value="0" oninput="gsRecalcularTotal()">
+            </div>
+            <div class="form-group">
+              <label for="inp-manoobra">Mano de obra ($)</label>
+              <input type="number" id="inp-manoobra" min="0" step="100" value="0" oninput="gsRecalcularTotal()">
+            </div>
+            <div class="form-group">
+              <label for="inp-otros">Otros costos ($)</label>
+              <input type="number" id="inp-otros" min="0" step="100" value="0" oninput="gsRecalcularTotal()">
+            </div>
+          </div>
+          <div class="presup-total">Total: <span id="total-display">$0</span></div>
+        </div>
+
+        <div class="form-group">
+          <label for="inp-observaciones">Observaciones adicionales</label>
+          <textarea id="inp-observaciones" rows="2" placeholder="Garantia, condiciones, aclaraciones importantes..." style="width:100%;background:var(--azul-oscuro);border:1px solid rgba(255,255,255,.15);color:#fff;border-radius:8px;padding:10px;font-size:.9rem;font-family:inherit;box-sizing:border-box;resize:vertical"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="inp-vigencia">Vigencia hasta (opcional)</label>
+          <input type="date" id="inp-vigencia" style="background:var(--azul-oscuro);border:1px solid rgba(255,255,255,.15);color:#fff;padding:10px 14px;border-radius:8px;font-size:.9rem">
+        </div>
+
+        <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap">
+          <button class="btn btn-accent" onclick="gsEnviarPresupuesto(this)" id="btn-enviar">Enviar presupuesto al cliente</button>
+          <a href="mis-propuestas.html" class="btn btn-outline">Cancelar</a>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+<script src="../js/supabase.js"></script>
+<script src="../js/auth.js"></script>
+<script>
+var SESION = null;
+var TIPO_ACTUAL = "presupuesto";
+
+(async function() {
+  SESION = await gsProtegerPagina("profesional");
+  if (!SESION) return;
+  document.getElementById("nombre-usuario").textContent = SESION.perfil.nombre + " " + SESION.perfil.apellido;
+  var av = document.getElementById("avatar-usuario");
+  if (av) av.textContent = ((SESION.perfil.nombre||'?')[0] + (SESION.perfil.apellido||'')[0]).toUpperCase();
+  await gsCargarSolicitudes();
+  gsRecalcularTotal();
+})();
+
+async function gsCargarSolicitudes() {
+  if (!supabaseClient || !SESION) return;
+  var r = await supabaseClient
+    .from("asignaciones_servicio")
+    .select("id_asignacion,id_solicitud,solicitud_servicio(descripcion,id_cliente,usuario_cliente(nombre,apellido))")
+    .eq("id_profesional", SESION.perfil.id_profesional)
+    .order("fecha_aceptacion", {ascending:false});
+  var sel = document.getElementById("sel-solicitud");
+  if (r.error || !r.data || !r.data.length) {
+    sel.innerHTML = '<option value="">Sin asignaciones activas</option>';
+    return;
+  }
+  sel.innerHTML = '<option value="">-- Seleccionar solicitud --</option>' + r.data.map(function(a) {
+    var s = a.solicitud_servicio || {};
+    var c = s.usuario_cliente || {};
+    var desc = (s.descripcion || "").substring(0, 50);
+    var cliente = c.nombre ? (c.nombre + " " + (c.apellido||"")) : "Cliente";
+    return '<option value="' + a.id_asignacion + '" data-solicitud="' + a.id_solicitud + '" data-cliente-id="' + (s.id_cliente||"") + '">' 
+      + gsEscapeHtml(cliente) + ' - ' + gsEscapeHtml(desc) + '</option>';
+  }).join("");
+}
+
+function gsSeleccionarTipo(btn) {
+  document.querySelectorAll(".tipo-btn").forEach(function(b) { b.classList.remove("active"); });
+  btn.classList.add("active");
+  TIPO_ACTUAL = btn.dataset.tipo;
+  var bloq = document.getElementById("bloque-costos");
+  bloq.style.opacity = TIPO_ACTUAL === "presupuesto" ? "1" : "0.5";
+  document.getElementById("btn-enviar").textContent = TIPO_ACTUAL === "diagnostico" ? "Enviar diagnostico al cliente" : "Enviar presupuesto al cliente";
+}
+
+function gsRecalcularTotal() {
+  var mat = parseFloat(document.getElementById("inp-materiales").value)||0;
+  var mano = parseFloat(document.getElementById("inp-manoobra").value)||0;
+  var otros = parseFloat(document.getElementById("inp-otros").value)||0;
+  var total = mat + mano + otros;
+  document.getElementById("total-display").textContent = "$ " + total.toLocaleString("es-AR", {minimumFractionDigits:0});
+}
+
+async function gsEnviarPresupuesto(btn) {
+  if (!supabaseClient || !SESION) return;
+  var selSol = document.getElementById("sel-solicitud");
+  var opt = selSol.options[selSol.selectedIndex];
+  if (!opt || !opt.value) { gsToast("Selecciona una solicitud.", "error"); return; }
+  var desc = document.getElementById("desc-presupuesto").value.trim();
+  if (!desc) { gsToast("La descripcion es obligatoria.", "error"); return; }
+  var mat = parseFloat(document.getElementById("inp-materiales").value)||0;
+  var mano = parseFloat(document.getElementById("inp-manoobra").value)||0;
+  var otros = parseFloat(document.getElementById("inp-otros").value)||0;
+  if (TIPO_ACTUAL === "presupuesto" && (mat+mano+otros) <= 0) {
+    gsToast("El presupuesto debe tener al menos un valor mayor a cero.", "error");
+    return;
+  }
+  var vigencia = document.getElementById("inp-vigencia").value || null;
+  var obs = document.getElementById("inp-observaciones").value.trim() || null;
+  var idCliente = parseInt(opt.dataset.clienteId, 10) || null;
+  if (!idCliente) { gsToast("No se pudo determinar el cliente de esta asignación. No se enviará el presupuesto.", "error"); return; }
+  var idSolicitud = parseInt(opt.dataset.solicitud) || null;
+  btn.disabled = true; btn.textContent = "Enviando...";
+  try {
+    var r = await supabaseClient.from("presupuestos").insert({
+      id_asignacion: parseInt(opt.value),
+      id_solicitud: idSolicitud,
+      id_profesional: SESION.perfil.id_profesional,
+      id_cliente: idCliente,
+      tipo: TIPO_ACTUAL,
+      descripcion: desc,
+      materiales: mat,
+      mano_de_obra: mano,
+      otros_costos: otros,
+      observaciones: obs,
+      vigencia_hasta: vigencia
+    });
+    if (r.error) throw r.error;
+  } catch (e) {
+    btn.disabled = false;
+    btn.textContent = TIPO_ACTUAL === "diagnostico" ? "Enviar diagnostico al cliente" : "Enviar presupuesto al cliente";
+    gsToast("Error al enviar: " + (e?.message || "No se pudo guardar el presupuesto."), "error");
+    return;
+  }
+  btn.disabled = false;
+  btn.textContent = TIPO_ACTUAL === "diagnostico" ? "Enviar diagnostico al cliente" : "Enviar presupuesto al cliente";
+  gsToast(TIPO_ACTUAL === "diagnostico" ? "Diagnostico enviado al cliente." : "Presupuesto enviado correctamente.", "success");
+  setTimeout(function() { window.location.href = "mis-propuestas.html"; }, 1500);
+}
+</script>
+<script src="../js/panel-life.js"></script><script src="../js/life.js"></script>
+</body>
+</html>

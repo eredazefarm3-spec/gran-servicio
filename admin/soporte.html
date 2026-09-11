@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Soporte — Gran Servicio</title>
+<link rel="stylesheet" href="../css/style.css"><link rel="stylesheet" href="../css/gs-polish.css">
+<link rel="stylesheet" href="../css/dashboard.css"><link rel="stylesheet" href="../css/dashboard-v2.css">
+<link rel="stylesheet" href="../css/panel-life.css"><link rel="stylesheet" href="../css/responsive.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<link rel="stylesheet" href="../css/life.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar">
+    <a href="../index.html" class="logo"><img src="../img/logo.png" alt="Gran Servicio" class="logo-img"><span>GRAN SERVICIO</span></a>
+    <ul class="sidebar-nav"><li><a href="dashboard.html">Dashboard</a></li><li><a href="clientes.html">Clientes</a></li><li><a href="profesionales.html">Profesionales</a></li><li><a href="empleados.html">Empleados</a></li><li><a href="solicitudes.html">Solicitudes</a></li><li><a href="propuestas.html">Propuestas</a></li><li><a href="asignaciones.html">Asignaciones</a></li><li><a href="pagos.html">Pagos</a></li><li><a href="transacciones.html">Transacciones</a></li><li><a href="facturas.html">Facturas</a></li><li><a href="comisiones.html">Comisiones</a></li><li><a href="reclamos.html">Reclamos</a></li><li><a href="soporte.html" class="active">Soporte</a></li><li><a href="suscripciones.html">Suscripciones</a></li><li><a href="geografia.html">Geografía</a></li><li><a href="catalogos.html">Catálogos</a></li></ul>
+    <div class="sidebar-foot"><button class="btn btn-ghost btn-sm" style="color:#CFE0EE" onclick="gsLogout()">Cerrar sesión</button></div>
+  </aside>
+  <main class="app-main">
+    <div class="topbar">
+      <button class="hamburger-menu btn btn-outline btn-sm" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+      <div></div><div class="topbar-user"><span id="nombre-usuario"></span><div class="avatar" id="avatar-usuario">--</div></div>
+    </div>
+    <div class="main-content">
+      <h2>Soporte</h2>
+      <div id="contenido-pagina" class="panel"><div class="loading-state"><div class="spinner"></div>Cargando…</div></div>
+    </div>
+  </main>
+</div>
+<script src="../js/supabase.js"></script>
+<script src="../js/auth.js"></script>
+<script>
+(async () => {
+  const sesion = await gsProtegerPagina("empleado");
+  if (!sesion) return;
+  document.getElementById("nombre-usuario").textContent = sesion.perfil.nombre + " " + sesion.perfil.apellido;
+  document.getElementById("avatar-usuario").textContent = (sesion.perfil.nombre[0] + (sesion.perfil.apellido[0]||"")).toUpperCase();
+  window.SESION = sesion;
+  window.dispatchEvent(new Event("gs-sesion-lista"));
+})();
+</script>
+<script>
+window.addEventListener("gs-sesion-lista", async () => {
+  const { data } = await supabaseClient.from("conversaciones_soporte")
+    .select("fecha_inicio, estados(nombre), usuario_cliente(nombre,apellido), usuario_profesional(nombre,apellido)")
+    .order("fecha_inicio",{ascending:false});
+  document.getElementById("contenido-pagina").innerHTML = (data && data.length) ? data.map(c => `
+    <div class="list-row"><div><strong>${gsEscapeHtml(c.usuario_cliente ? c.usuario_cliente.nombre+" "+c.usuario_cliente.apellido : (c.usuario_profesional?.nombre+" "+c.usuario_profesional?.apellido))}</strong>
+    <p class="muted" style="margin:2px 0">Iniciada: ${new Date(c.fecha_inicio).toLocaleDateString()}</p></div>
+    <span class="badge badge-neutro">${gsEscapeHtml(c.estados?.nombre||"—")}</span></div>`).join("") : '<div class="empty-state">Sin conversaciones de soporte.</div>';
+});
+</script>
+<script src="../js/panel-life.js"></script><script src="../js/life.js"></script>
+</body></html>

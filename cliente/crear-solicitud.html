@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Solicitar un servicio — Gran Servicio</title>
+<link rel="stylesheet" href="../css/style.css"><link rel="stylesheet" href="../css/gs-polish.css">
+<link rel="stylesheet" href="../css/dashboard.css"><link rel="stylesheet" href="../css/dashboard-v2.css">
+<link rel="stylesheet" href="../css/maps.css">
+<link rel="stylesheet" href="../css/panel-life.css"><link rel="stylesheet" href="../css/responsive.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<link rel="stylesheet" href="../css/life.css">
+</head>
+<body>
+
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar">
+    <a href="../index.html" class="logo"><img src="../img/logo.png" alt="Gran Servicio" class="logo-img"><span>GRAN SERVICIO</span></a>
+    <ul class="sidebar-nav">
+      <li><a href="dashboard.html">Dashboard</a></li>
+      <li><a href="solicitudes.html">Mis solicitudes</a></li>
+      <li><a href="crear-solicitud.html" class="active">Solicitar servicio</a></li>
+      <li><a href="presupuesto.html">Presupuestos</a></li><li><a href="propuestas.html">Propuestas</a></li>
+      <li><a href="pagos.html">Pagos</a></li>
+      <li><a href="reclamos.html">Reclamos</a></li>
+    </ul>
+    <div class="sidebar-foot">
+      <button class="btn btn-ghost btn-sm" style="color:#CFE0EE" onclick="gsLogout()">Cerrar sesión</button>
+    </div>
+  </aside>
+
+  <main class="app-main">
+    <div class="topbar"><h3 style="margin:0">Nueva solicitud</h3><div></div></div>
+
+    <div class="main-content" style="max-width:760px;margin:0 auto;">
+      <div class="steps-tracker">
+        <div class="step active" data-step="1"></div>
+        <div class="step" data-step="2"></div>
+        <div class="step" data-step="3"></div>
+        <div class="step" data-step="4"></div>
+        <div class="step" data-step="5"></div>
+        <div class="step" data-step="6"></div>
+      </div>
+
+      <div class="card">
+        <!-- PASO 1: descripción -->
+        <div class="step-panel active" id="panel-1">
+          <span class="eyebrow">Paso 1 de 6</span>
+          <h3>¿Qué necesitás?</h3>
+          <div class="form-group">
+            <label>Contanos qué problema tenés</label>
+            <textarea id="s-descripcion" rows="4" placeholder="Ej: se rompió una canilla en la cocina y pierde agua"></textarea>
+          </div>
+          <div class="user-type-toggle">
+            <label><input type="radio" name="modalidad" value="ahora"><span>⚡ Necesito ayuda ahora</span></label>
+            <label><input type="radio" name="modalidad" value="presupuesto" checked><span>📋 Quiero recibir presupuestos</span></label>
+          </div>
+          <div class="flex-between"><span></span><button class="btn btn-primary" onclick="gsPaso(2)">Continuar</button></div>
+        </div>
+
+        <!-- PASO 2: servicio -->
+        <div class="step-panel" id="panel-2">
+          <span class="eyebrow">Paso 2 de 6</span>
+          <h3>Servicio</h3>
+          <div class="form-group">
+            <label>Categoría</label>
+            <select id="s-categoria"><option value="" selected disabled>Cargando…</option></select>
+          </div>
+          <div class="form-group">
+            <label>Servicio</label>
+            <select id="s-servicio"><option value="" selected disabled>Elegí una categoría primero</option></select>
+          </div>
+          <div class="flex-between"><button class="btn btn-outline" onclick="gsPaso(1)">Atrás</button><button class="btn btn-primary" onclick="gsPaso(3)">Continuar</button></div>
+        </div>
+
+        <!-- PASO 3: ubicación -->
+        <div class="step-panel" id="panel-3">
+          <span class="eyebrow">Paso 3 de 6</span>
+          <h3>Ubicación</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Ciudad</label>
+              <select id="s-ciudad"><option>Cargando…</option></select>
+            </div>
+            <div class="form-group">
+              <label>Barrio</label>
+              <select id="s-barrio"><option>Elegí una ciudad primero</option></select>
+            </div>
+          </div>
+          <div class="map-wrap">
+            <div class="map-container-wrapper">
+              <div id="map-solicitud"></div>
+              <div class="map-center-pin">📍</div>
+            </div>
+          </div>
+          <p class="form-hint" style="margin-top: 8px;">* Ajustá el mapa para marcar tu ubicación exacta</p>
+          <div class="flex-between" style="margin-top:16px"><button class="btn btn-outline" onclick="gsPaso(2)">Atrás</button><button class="btn btn-primary" onclick="gsPaso(4)">Continuar</button></div>
+        </div>
+
+        <!-- PASO 4: cuándo -->
+        <div class="step-panel" id="panel-4">
+          <span class="eyebrow">Paso 4 de 6</span>
+          <h3>¿Cuándo?</h3>
+          <div class="form-group">
+            <label>Presupuesto máximo (opcional)</label>
+            <input type="number" id="s-presupuesto-maximo" min="0" step="0.01" placeholder="Ej: 150000">
+            <p class="form-hint">Si tenés un límite aproximado, indicarlo ayuda a los profesionales a preparar propuestas.</p>
+          </div>
+          <div class="form-group">
+            <select id="s-cuando">
+              <option value="ahora">Ahora</option>
+              <option value="hoy">Hoy</option>
+              <option value="manana">Mañana</option>
+              <option value="personalizada">Fecha personalizada</option>
+            </select>
+          </div>
+          <div class="form-group" id="grupo-hora" style="display:block">
+            <label>Hora</label>
+            <input type="time" id="s-hora" value="09:00">
+          </div>
+          <div class="form-group" id="grupo-fecha-personalizada" style="display:none">
+            <label>Elegí fecha</label>
+            <input type="date" id="s-fecha">
+          </div>
+          <div class="flex-between"><button class="btn btn-outline" onclick="gsPaso(3)">Atrás</button><button class="btn btn-primary" onclick="gsPaso(5)">Continuar</button></div>
+        </div>
+
+        <!-- PASO 5: visita presencial -->
+        <div class="step-panel" id="panel-5">
+          <span class="eyebrow">Paso 5 de 6</span>
+          <h3>Visita y Presupuesto Presencial</h3>
+          <p style="margin-bottom: 20px; color: #fff;">
+             Si querés que un profesional analice tu situación en persona para darte un presupuesto exacto, deberás abonar una <strong>seña de $20.000</strong>.
+          </p>
+          <div class="card" style="background:var(--azul-medio); padding: 16px; border: 1px solid var(--naranja-claro); border-radius: var(--radio-md);">
+             <label style="display:flex; align-items:flex-start; gap: 12px; margin: 0; cursor:pointer;">
+                <input type="checkbox" id="s-pedir-visita" style="width: 24px; height: 24px; margin-top: 2px;">
+                <span style="color:#fff;">
+                  <strong>Solicitar a un profesional un presupuesto</strong><br>
+                  <small style="color:#CFE0EE; display:block; margin-top:6px; line-height:1.4;">
+                    Acepto las políticas y privacidad: Entiendo que se me cobrará un adelantado de $20.000. Si acepto el presupuesto del profesional, este monto se descontará del precio final. Si rechazo el presupuesto, los $20.000 no serán devueltos en concepto de visita.
+                  </small>
+                </span>
+             </label>
+          </div>
+          <div class="form-group" style="margin-top: 24px;">
+            <label>Fotos (opcional)</label>
+            <input type="file" id="s-fotos" multiple accept="image/*">
+            <p class="form-hint">Las fotos ayudan a los profesionales a entender mejor el trabajo.</p>
+          </div>
+          <div class="flex-between"><button class="btn btn-outline" onclick="gsPaso(4)">Atrás</button><button class="btn btn-primary" onclick="gsPaso(6)">Continuar</button></div>
+        </div>
+
+        <!-- PASO 6: confirmar -->
+        <div class="step-panel" id="panel-6">
+          <span class="eyebrow">Paso 6 de 6</span>
+          <h3>Confirmar solicitud</h3>
+          <div id="resumen-solicitud" class="panel" style="background:var(--azul-suave)"></div>
+          <div class="flex-between" style="margin-top:16px">
+            <button class="btn btn-outline" onclick="gsPaso(5)">Atrás</button>
+            <button class="btn btn-accent" id="btn-confirmar" onclick="gsConfirmarSolicitud()">Confirmar solicitud</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="../js/supabase.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/geolocation.js"></script>
+<script src="../js/mapas.js"></script>
+<script>
+let SESION = null;
+let MAPA = null;
+let UBICACION_ACTUAL = null;
+
+(async () => {
+  SESION = await gsProtegerPagina("cliente");
+  if (!SESION) return;
+
+  // Preprellenar modalidad y texto desde querystring del home
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("modo") === "ahora") document.querySelector('input[value="ahora"]').checked = true;
+  if (params.get("q")) document.getElementById("s-descripcion").value = params.get("q");
+
+  await gsCargarCategorias();
+  await gsCargarServicios();
+  const servicioInicial = Number(params.get('servicio'));
+  if (Number.isInteger(servicioInicial) && servicioInicial > 0) {
+    const opt = [...document.getElementById('s-servicio').options].find(o => Number(o.value) === servicioInicial);
+    if (opt) document.getElementById('s-servicio').value = String(servicioInicial);
+  }
+  await gsCargarCiudades();
+  gsInicializarMapa();
+  gsCargarGeografiaCordoba(MAPA);
+})();
+
+function gsPaso(n) {
+  const actual = Number(document.querySelector(".step-panel.active")?.id?.replace("panel-", "") || 1);
+  if (n > actual) {
+    if (actual === 1 && !document.getElementById("s-descripcion").value.trim()) {
+      gsToast("Contanos qué problema o trabajo necesitás.", "error");
+      document.getElementById("s-descripcion").focus();
+      return;
+    }
+    if (actual === 2) {
+      const idServicio = Number(document.getElementById("s-servicio").value);
+      if (!Number.isInteger(idServicio) || idServicio <= 0) {
+        gsToast("Elegí un servicio válido antes de continuar.", "error");
+        document.getElementById("s-servicio").focus();
+        return;
+      }
+    }
+  }
+  document.querySelectorAll(".step-panel").forEach(p => p.classList.remove("active"));
+  document.getElementById("panel-" + n).classList.add("active");
+  document.querySelectorAll(".steps-tracker .step").forEach(s => {
+    const step = parseInt(s.dataset.step);
+    s.classList.toggle("done", step < n);
+    s.classList.toggle("active", step === n);
+  });
+  if (n === 6) gsRenderResumen();
+  if (n === 3 && MAPA) setTimeout(() => MAPA.invalidateSize(), 200);
+}
+
+async function gsCargarCategorias() {
+  const { data, error } = await supabaseClient.from("categorias_servicio").select("id_categoria, nombre, descripcion").eq("activo", true).order("nombre");
+  const sel = document.getElementById("s-categoria");
+  if (error) { sel.innerHTML = '<option value="">No se pudieron cargar las categorías</option>'; gsToast("No pudimos cargar las categorías de servicios.", "error"); return; }
+  sel.innerHTML = (data || []).map(c => `<option value="${c.id_categoria}">${gsEscapeHtml(c.nombre)}</option>`).join("") || '<option value="">No hay categorías disponibles</option>';
+  sel.addEventListener("change", gsCargarServicios);
+  if (data && data.length) await gsCargarServicios();
+}
+
+async function gsCargarServicios() {
+  const idCategoria = document.getElementById("s-categoria").value;
+  const sel = document.getElementById("s-servicio");
+  if (!idCategoria) { sel.innerHTML = '<option value="">Elegí una categoría</option>'; return; }
+  const { data, error } = await supabaseClient.from("servicios").select("id_servicio, nombre").eq("id_categoria", idCategoria).eq("activo", true).order("nombre");
+  if (error) { sel.innerHTML = '<option value="">No se pudieron cargar los servicios</option>'; gsToast("No pudimos cargar los servicios.", "error"); return; }
+  sel.innerHTML = (data || []).map(s => `<option value="${s.id_servicio}">${gsEscapeHtml(s.nombre)}</option>`).join("") || '<option value="">No hay servicios en esta categoría</option>';
+}
+
+async function gsCargarCiudades() {
+  const { data } = await supabaseClient.from("ciudades").select("id_ciudad, nombre").order("nombre");
+  const sel = document.getElementById("s-ciudad");
+  sel.innerHTML = (data || []).map(c => `<option value="${c.id_ciudad}">${gsEscapeHtml(c.nombre)}</option>`).join("");
+  sel.addEventListener("change", gsCargarBarrios);
+  if (data && data.length) gsCargarBarrios();
+}
+
+async function gsCargarBarrios() {
+  const idCiudad = document.getElementById("s-ciudad").value;
+  const { data } = await supabaseClient.from("barrios").select("id_barrio, nombre").eq("id_ciudad", idCiudad).order("nombre");
+  const sel = document.getElementById("s-barrio");
+  sel.innerHTML = data && data.length
+    ? data.map(b => `<option value="${b.id_barrio}">${gsEscapeHtml(b.nombre)}</option>`).join("")
+    : `<option value="">Sin barrios cargados para esta ciudad</option>`;
+}
+
+function gsInicializarMapa() {
+  MAPA = gsCrearMapa("map-solicitud", { zoom: 8 });
+}
+
+document.getElementById("s-cuando").addEventListener("change", (e) => {
+  const personalizado = e.target.value === "personalizada";
+  const ahora = e.target.value === "ahora";
+  document.getElementById("grupo-fecha-personalizada").style.display = personalizado ? "block" : "none";
+  document.getElementById("grupo-hora").style.display = ahora ? "none" : "block";
+});
+
+async function gsUsarUbicacionActual() {
+  const pos = await gsObtenerUbicacionActual();
+  if (pos) {
+    UBICACION_ACTUAL = pos;
+    gsCentrarMapa(MAPA, pos, 15);
+    gsAgregarMarcador(MAPA, { ...pos, titulo: "Tu ubicación", tipo: "cliente" });
+    gsToast("Ubicación detectada correctamente.", "success");
+  }
+}
+
+function gsRenderResumen() {
+  const descripcion = document.getElementById("s-descripcion").value;
+  const modalidad = document.querySelector('input[name="modalidad"]:checked').value;
+  const servicioTexto = document.getElementById("s-servicio").selectedOptions[0]?.textContent || "¿?";
+  const ciudadTexto = document.getElementById("s-ciudad").selectedOptions[0]?.textContent || "¿?";
+  const barrioTexto = document.getElementById("s-barrio").selectedOptions[0]?.textContent || "¿?";
+  const cuando = document.getElementById("s-cuando").value;
+  const pedirVisita = document.getElementById("s-pedir-visita").checked;
+
+  document.getElementById("resumen-solicitud").innerHTML = `
+    <p><strong>Descripción:</strong> ${gsEscapeHtml(descripcion || "¿?")}</p>
+    <p><strong>Modalidad:</strong> ${modalidad === "ahora" ? "Necesito ayuda ahora" : "Quiero recibir presupuestos"}</p>
+    <p><strong>Servicio:</strong> ${servicioTexto}</p>
+    <p><strong>Ubicación:</strong> ${ciudadTexto} / ${barrioTexto}</p>
+    <p><strong>Cuándo:</strong> ${cuando}</p>
+    <p><strong>Presupuesto máximo:</strong> ${document.getElementById("s-presupuesto-maximo").value ? "$" + Number(document.getElementById("s-presupuesto-maximo").value).toLocaleString("es-AR") : "No indicado"}</p>
+    <p><strong>Visita presencial:</strong> ${pedirVisita ? "<span class='badge badge-alerta'>Solicitada (Seña $20.000)</span>" : "No requerida"}</p>
+  `;
+}
+
+async function gsConfirmarSolicitud() {
+  const idServicio = Number(document.getElementById("s-servicio").value);
+  if (!Number.isInteger(idServicio) || idServicio <= 0) {
+    gsToast("No podés publicar la solicitud sin seleccionar un servicio válido.", "error");
+    gsPaso(2);
+    document.getElementById("s-servicio").focus();
+    return;
+  }
+  const btn = document.getElementById("btn-confirmar");
+  btn.disabled = true;
+  btn.textContent = "Publicando…";
+
+  try {
+    const { data: estadoPublicada, error: estadoError } = await supabaseClient
+      .from("estados").select("id_estado").eq("tipo_entidad", "solicitud").eq("nombre", "Publicada").single();
+    if (estadoError || !estadoPublicada) throw new Error("No se encontró el estado Publicada.");
+
+    const idBarrio = document.getElementById("s-barrio").value || null;
+    const centro = MAPA.getCenter();
+    const pedirVisita = document.getElementById("s-pedir-visita").checked;
+    const presupuestoInput = document.getElementById("s-presupuesto-maximo").value.trim();
+    const presupuestoMaximo = presupuestoInput === "" ? null : Number(presupuestoInput);
+    if (presupuestoMaximo !== null && (!Number.isFinite(presupuestoMaximo) || presupuestoMaximo < 0)) {
+      throw new Error("El presupuesto máximo no es válido.");
+    }
+    const descBase = document.getElementById("s-descripcion").value.trim();
+    const descFinal = pedirVisita
+      ? descBase + "\n\n[SOLICITA VISITA PRESENCIAL - Seña de $20.000 pendiente de pago]"
+      : descBase;
+
+    let fechaProgramada = null;
+    const cuando = document.getElementById("s-cuando").value;
+    const hoy = new Date();
+    if (cuando === "ahora") {
+      fechaProgramada = hoy.toISOString();
+    } else if (cuando === "hoy") {
+      const hora = document.getElementById("s-hora").value || "09:00";
+      const [hh, mm] = hora.split(":").map(Number);
+      const d = new Date(hoy);
+      d.setHours(Number.isFinite(hh) ? hh : 9, Number.isFinite(mm) ? mm : 0, 0, 0);
+      fechaProgramada = d.toISOString();
+    } else if (cuando === "manana") {
+      const hora = document.getElementById("s-hora").value || "09:00";
+      const [hh, mm] = hora.split(":").map(Number);
+      const d = new Date(hoy);
+      d.setDate(d.getDate() + 1);
+      d.setHours(Number.isFinite(hh) ? hh : 9, Number.isFinite(mm) ? mm : 0, 0, 0);
+      fechaProgramada = d.toISOString();
+    } else if (cuando === "personalizada") {
+      const fecha = document.getElementById("s-fecha").value;
+      if (!fecha) throw new Error("Elegí una fecha para la visita.");
+      const hora = document.getElementById("s-hora").value || "09:00";
+      fechaProgramada = new Date(`${fecha}T${hora}:00`).toISOString();
+    }
+
+    const payload = {
+      id_cliente: SESION.perfil.id_cliente,
+      id_servicio: idServicio,
+      id_barrio: idBarrio,
+      descripcion: descFinal,
+      modalidad: document.querySelector('input[name="modalidad"]:checked').value,
+      presupuesto_maximo: presupuestoMaximo,
+      latitud: UBICACION_ACTUAL?.lat ?? centro.lat,
+      longitud: UBICACION_ACTUAL?.lng ?? centro.lng,
+      fecha_programada: fechaProgramada,
+      id_estado: estadoPublicada.id_estado
+    };
+
+    const { data, error } = await supabaseClient.from("solicitud_servicio").insert(payload).select().single();
+    if (error) throw error;
+
+    // Las fotos se cargan después de crear la solicitud para poder usar su ID como carpeta.
+    const files = Array.from(document.getElementById("s-fotos")?.files || []);
+    const fotosUrls = [];
+    for (let i = 0; i < Math.min(files.length, 6); i++) {
+      const file = files[i];
+      if (!file.type.startsWith("image/")) continue;
+      if (file.size > 8 * 1024 * 1024) throw new Error("Cada foto debe pesar como máximo 8 MB.");
+      const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
+      const path = `${SESION.user.id}/${data.id_solicitud}/${crypto.randomUUID()}.${ext}`;
+      const up = await supabaseClient.storage.from("solicitud-fotos").upload(path, file, { upsert:false, contentType:file.type });
+      if (up.error) throw new Error("No se pudo subir una de las fotos: " + up.error.message);
+      const pub = supabaseClient.storage.from("solicitud-fotos").getPublicUrl(path);
+      if (pub.data?.publicUrl) fotosUrls.push(pub.data.publicUrl);
+    }
+    if (fotosUrls.length) {
+      const upd = await supabaseClient.from("solicitud_servicio").update({ fotos:fotosUrls }).eq("id_solicitud", data.id_solicitud).eq("id_cliente", SESION.perfil.id_cliente);
+      if (upd.error) throw new Error("La solicitud se creó, pero no pudimos guardar las fotos: " + upd.error.message);
+    }
+
+    if (pedirVisita) {
+      const tx = await supabaseClient.rpc("crear_transaccion_sena_visita", { p_id_solicitud: data.id_solicitud, p_monto: 20000 });
+      if (tx.error || !tx.data?.id_transaccion) throw new Error(tx.error?.message || "No se pudo crear la seña de visita.");
+      const pref = await supabaseClient.functions.invoke("mercado-pago-create-preference-v3", {
+        body: { id_transaccion:Number(tx.data.id_transaccion), title:"Seña por visita presencial — Gran Servicio", back_urls:{ success:location.origin+"/cliente/pagos.html?estado=success", failure:location.origin+"/cliente/pagos.html?estado=failure", pending:location.origin+"/cliente/pagos.html?estado=pending" }, auto_return:"approved" }
+      });
+      if (pref.error || pref.data?.error) throw new Error(pref.error?.message || pref.data?.error || "No se pudo preparar Mercado Pago.");
+      const url = pref.data?.init_point || pref.data?.sandbox_init_point;
+      if (!url) throw new Error("Mercado Pago no devolvió un enlace de pago.");
+      gsToast("Solicitud creada. Te llevamos a Mercado Pago para abonar la seña de $20.000.", "success");
+      window.location.href = url;
+      return;
+    }
+
+    gsToast("¡Solicitud publicada! Buscando profesionales cerca tuyo…", "success");
+    window.location.href = `solicitudes.html?nueva=${data.id_solicitud}`;
+  } catch (e) {
+    console.error(e);
+    gsToast(e?.message || "No pudimos publicar la solicitud. Intentá nuevamente.", "error");
+    btn.disabled = false;
+    btn.textContent = "Confirmar solicitud";
+  }
+}
+</script>
+<script src="../js/panel-life.js"></script><script src="../js/life.js"></script>
+</body>
+</html>

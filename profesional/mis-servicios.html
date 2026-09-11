@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mis servicios — Gran Servicio</title>
+<link rel="stylesheet" href="../css/style.css"><link rel="stylesheet" href="../css/gs-polish.css">
+<link rel="stylesheet" href="../css/dashboard.css"><link rel="stylesheet" href="../css/dashboard-v2.css">
+<link rel="stylesheet" href="../css/panel-life.css"><link rel="stylesheet" href="../css/responsive.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<link rel="stylesheet" href="../css/life.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar">
+    <a href="../index.html" class="logo"><img src="../img/logo.png" alt="Gran Servicio" class="logo-img"><span>GRAN SERVICIO</span></a>
+    <ul class="sidebar-nav"><li><a href="dashboard.html">Dashboard</a></li><li><a href="solicitudes-cercanas.html">Solicitudes cercanas</a></li><li><a href="crear-presupuesto.html">Crear presupuesto</a></li><li><a href="mis-propuestas.html">Mis propuestas</a></li><li><a href="mis-servicios.html" class="active">Mis servicios</a></li><li><a href="disponibilidad.html">Disponibilidad</a></li><li><a href="zonas.html">Zonas de cobertura</a></li><li><a href="mapa-demanda.html">Zonas con más trabajo</a></li><li><a href="resenas.html">Mis reseñas</a></li><li><a href="suscripcion.html">Suscripción</a></li><li><a href="transacciones.html">Transacciones</a></li><li><a href="mensajes.html">Mensajes</a></li><li><a href="notificaciones.html">Notificaciones</a></li><li><a href="reclamos.html">Reclamos</a></li><li><a href="perfil.html">Perfil</a></li></ul>
+    <div class="sidebar-foot"><button class="btn btn-ghost btn-sm" style="color:#CFE0EE" onclick="gsLogout()">Cerrar sesión</button></div>
+  </aside>
+  <main class="app-main">
+    <div class="topbar">
+      <button class="hamburger-menu btn btn-outline btn-sm" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+      <div></div><div class="topbar-user"><span id="nombre-usuario"></span><div class="avatar" id="avatar-usuario">--</div></div>
+    </div>
+    <div class="main-content">
+      <h2>Mis servicios</h2>
+      <div id="contenido-pagina" class="panel"><div class="loading-state"><div class="spinner"></div>Cargando…</div></div>
+    </div>
+  </main>
+</div>
+<script src="../js/supabase.js"></script>
+<script src="../js/auth.js"></script>
+<script>
+(async () => {
+  const sesion = await gsProtegerPagina("profesional");
+  if (!sesion) return;
+  document.getElementById("nombre-usuario").textContent = sesion.perfil.nombre + " " + sesion.perfil.apellido;
+  document.getElementById("avatar-usuario").textContent = (sesion.perfil.nombre[0] + (sesion.perfil.apellido[0]||"")).toUpperCase();
+  window.SESION = sesion;
+  window.dispatchEvent(new Event("gs-sesion-lista"));
+})();
+</script>
+<script>
+let catalogoGlobal = [];
+let misServiciosGlobal = new Map();
+
+window.addEventListener("gs-sesion-lista", async () => {
+  const { data: catalogo } = await supabaseClient.from("servicios").select("id_servicio, nombre").eq("activo", true).order("nombre");
+  catalogoGlobal = catalogo || [];
+  await gsCargarMisServicios();
+});
+
+async function gsCargarMisServicios() {
+  const { perfil } = window.SESION;
+  const { data: misServicios } = await supabaseClient.from("profesional_servicio")
+    .select("id_servicio, experiencia, tarifa_base, activo, estado_aprobacion, motivo_rechazo, servicios(nombre)")
+    .eq("id_profesional", perfil.id_profesional);
+    
+  misServiciosGlobal = new Map((misServicios||[]).map(s => [s.id_servicio, s]));
+  renderizar();
+}
+
+function getBadgeEstado(estado) {
+  if (!estado) return '<span class="badge badge-exito">Aprobado</span>';
+  switch(estado) {
+    case 'aprobado': return '<span class="badge badge-exito">Aprobado</span>';
+    case 'pendiente': return '<span class="badge badge-alerta">Pendiente</span>';
+    case 'rechazado': return '<span class="badge badge-error">Rechazado</span>';
+    default: return '';
+  }
+}
+
+function renderizar() {
+  const lista = Array.from(misServiciosGlobal.values());
+  let html = "";
+  
+  if (lista.length > 0) {
+    html += `<table><thead><tr><th>Servicio / Título</th><th>Estado</th><th>Experiencia (años)</th><th>Tarifa base</th><th>Acción</th></tr></thead><tbody>`;
+    html += lista.map(s => {
+      let trStyle = s.estado_aprobacion === 'rechazado' ? 'opacity:0.8; background:rgba(255,0,0,0.05)' : '';
+      let motivo = s.estado_aprobacion === 'rechazado' && s.motivo_rechazo ? `<div style="color:var(--error);font-size:0.8rem;margin-top:4px">Motivo: ${gsEscapeHtml(s.motivo_rechazo)}</div>` : '';
+      return `<tr style="${trStyle}">
+        <td><strong>${gsEscapeHtml(s.servicios?.nombre || "Servicio")}</strong>${motivo}</td>
+        <td>${getBadgeEstado(s.estado_aprobacion)}</td>
+        <td><input type="number" style="width:90px" class="inp-exp" data-id="${s.id_servicio}" value="${s.experiencia ?? ""}" placeholder="Ej: 5" ${s.estado_aprobacion==='rechazado'?'disabled':''}></td>
+        <td><input type="number" style="width:120px" class="inp-tarifa" data-id="${s.id_servicio}" value="${s.tarifa_base ?? ""}" placeholder="Ej: 15000" ${s.estado_aprobacion==='rechazado'?'disabled':''}></td>
+        <td><button class="btn btn-outline btn-sm" onclick="gsQuitarServicio(${s.id_servicio})" style="color:var(--error);border-color:var(--error)">Quitar</button></td>
+      </tr>`;
+    }).join("");
+    html += `</tbody></table>
+    <button class="btn btn-primary" style="margin-top:16px" onclick="gsGuardarCambios()">Guardar cambios</button>`;
+  } else {
+    html += `<div class="empty-state">No tenés servicios configurados en tu perfil. Agregá uno a continuación.</div>`;
+  }
+  
+  const opcionesDisponibles = catalogoGlobal.filter(s => !misServiciosGlobal.has(s.id_servicio));
+  if (opcionesDisponibles.length > 0) {
+    html += `<div style="margin-top:40px;padding:24px;background:rgba(255,255,255,0.03);border-radius:12px;border:1px solid rgba(255,255,255,0.1)">
+      <h3 style="margin-top:0;margin-bottom:12px">Agregar título / servicio</h3>
+      <p style="color:var(--texto-secundario);margin-bottom:16px;font-size:0.9rem">Seleccioná un nuevo servicio. Vas a necesitar subir una foto de tu certificado o título para que sea verificado por administración.</p>
+      
+      <div class="form-row" style="margin-bottom:16px">
+        <div style="flex:1">
+          <label>Servicio a ofrecer</label>
+          <select id="sel-nuevo-servicio">
+            <option value="">Seleccioná un servicio...</option>
+            ${opcionesDisponibles.map(s => `<option value="${s.id_servicio}">${gsEscapeHtml(s.nombre)}</option>`).join("")}
+          </select>
+        </div>
+      </div>
+      
+      <div class="form-row" style="margin-bottom:24px">
+        <div style="flex:1">
+          <label>Foto del título o certificado (JPG/PNG)</label>
+          <input type="file" id="file-titulo" accept="image/png, image/jpeg" style="background:rgba(0,0,0,0.2)">
+        </div>
+      </div>
+
+      <button class="btn btn-accent" onclick="gsAgregarServicioBtn(this)">Enviar para verificación</button>
+    </div>`;
+  }
+
+  document.getElementById("contenido-pagina").innerHTML = html;
+}
+
+async function gsAgregarServicioBtn(btn) {
+  const sel = document.getElementById("sel-nuevo-servicio");
+  const fileInput = document.getElementById("file-titulo");
+  if (!sel || !sel.value) { gsToast("Seleccioná un servicio.", "error"); return; }
+  if (!fileInput.files || fileInput.files.length === 0) { gsToast("Tenés que adjuntar una foto de tu título.", "error"); return; }
+  
+  const file = fileInput.files[0];
+  if (!['image/jpeg','image/png'].includes(file.type)) { gsToast("El título debe ser JPG o PNG.", "error"); return; }
+  if (file.size > 5 * 1024 * 1024) { gsToast("El archivo es muy pesado (máx 5MB).", "error"); return; }
+  
+  btn.disabled = true;
+  btn.textContent = "Subiendo...";
+  
+  const idServicio = parseInt(sel.value);
+  const { perfil } = window.SESION;
+  
+  // 1. Subir archivo a professional-docs (privado)
+  const ext = file.name.split('.').pop();
+  const filePath = `${perfil.id_profesional}/titulo_${idServicio}_${Date.now()}.${ext}`;
+  
+  const { error: uploadError } = await supabaseClient.storage.from("professional-docs").upload(filePath, file);
+  
+  if (uploadError) {
+    console.error(uploadError);
+    gsToast("Error al subir la imagen.", "error");
+    btn.disabled = false;
+    btn.textContent = "Enviar para verificación";
+    return;
+  }
+  
+  // 2. Insertar o volver a presentar si este servicio había sido rechazado
+  const existente = misServiciosGlobal.get(idServicio);
+  let error;
+  if (existente && existente.estado_aprobacion === 'rechazado') {
+    ({ error } = await supabaseClient.from("profesional_servicio").update({
+      activo: false, estado_aprobacion: 'pendiente', foto_titulo_url: filePath, motivo_rechazo: null
+    }).eq("id_profesional", perfil.id_profesional).eq("id_servicio", idServicio));
+  } else {
+    ({ error } = await supabaseClient.from("profesional_servicio").insert({
+      id_profesional: perfil.id_profesional, id_servicio: idServicio, experiencia: null, tarifa_base: null,
+      activo: false, estado_aprobacion: 'pendiente', foto_titulo_url: filePath
+    }));
+  }
+  if (error) {
+    console.error(error);
+    gsToast("Error al guardar el servicio en tu perfil.", "error");
+  } else {
+    gsToast("Servicio enviado y pendiente de verificación.", "success");
+    await gsCargarMisServicios();
+  }
+}
+
+async function gsQuitarServicio(id) {
+  const { perfil } = window.SESION;
+  const actual = misServiciosGlobal.get(Number(id));
+  if (actual?.estado_aprobacion === "aprobado" && actual?.activo) {
+    const { data: permiso, error: permisoError } = await supabaseClient.rpc("profesional_puede_quitar_servicio", { p_id_servicio: Number(id) });
+    if (permisoError) { gsToast("No pudimos verificar si el servicio puede quitarse.", "error"); return; }
+    if (!permiso) { gsToast("No podés quitar este servicio mientras tenga trabajos abiertos asociados.", "error"); return; }
+  }
+  if (!confirm("¿Seguro que querés quitar este servicio de tu perfil?")) return;
+  
+  const { error } = await supabaseClient.from("profesional_servicio").delete()
+    .eq("id_profesional", perfil.id_profesional)
+    .eq("id_servicio", id);
+    
+  if (error) {
+    gsToast("Error al quitar servicio.", "error");
+    return;
+  }
+  
+  gsToast("Servicio eliminado.", "info");
+  await gsCargarMisServicios();
+}
+
+async function gsGuardarCambios() {
+  const { perfil } = window.SESION;
+  const inputsExp = document.querySelectorAll(".inp-exp");
+  let ok = true;
+  for (const inp of inputsExp) {
+    if(inp.disabled) continue;
+    const id = inp.dataset.id;
+    const exp = inp.value || null;
+    const tar = document.querySelector(`.inp-tarifa[data-id="${id}"]`).value || null;
+    const { error } = await supabaseClient.from("profesional_servicio").update({
+      experiencia: exp,
+      tarifa_base: tar
+    }).eq("id_profesional", perfil.id_profesional).eq("id_servicio", id);
+    if (error) ok = false;
+  }
+  if (ok) {
+    gsToast("Cambios guardados correctamente.", "success");
+  } else {
+    gsToast("Hubo un error al guardar algunos cambios.", "error");
+  }
+}
+</script>
+<script src="../js/panel-life.js"></script><script src="../js/life.js"></script>
+</body></html>

@@ -79,14 +79,22 @@ let MAPA, PROF, MI_UBICACION;
     return;
   }
 
-  const { data: solicitudes } = await supabaseClient
-    .from("solicitud_servicio")
-    .select("id_solicitud, descripcion, presupuesto_maximo, latitud, longitud, fecha_solicitud, servicios(nombre), barrios(nombre), estados(nombre)")
-    .in("id_servicio", idsServicio)
-    .order("fecha_solicitud", { ascending: false });
+  // La consulta segura al backend ya valida que el profesional tenga el servicio solicitado.
+  const { data: solicitudesCompatibles, error: solicitudesError } = await supabaseClient.rpc("obtener_solicitudes_compatibles_profesional", { p_limit: 100 });
+  if (solicitudesError) {
+    console.error("No se pudieron cargar las solicitudes compatibles", solicitudesError);
+    cont.innerHTML = '<div class="empty-state">No pudimos cargar las solicitudes compatibles. Intentá nuevamente.</div>';
+    return;
+  }
 
+  const solicitudes = (solicitudesCompatibles || []).map(s => ({
+    ...s,
+    servicios: { nombre: s.servicio_nombre },
+    barrios: { nombre: s.barrio_nombre },
+    estados: { nombre: s.estado_nombre }
+  }));
   const nombresDisponibles = ["Publicada", "Propuestas recibidas", "Buscando profesional"];
-  const disponibles = (solicitudes || []).filter(s => nombresDisponibles.some(n => (s.estados?.nombre || "").trim().toLowerCase() === n.toLowerCase()));
+  const disponibles = solicitudes.filter(s => nombresDisponibles.some(n => (s.estados?.nombre || "").trim().toLowerCase() === n.toLowerCase()));
   if ((solicitudes || []).length && !disponibles.length) console.info("No hay solicitudes en estados publicados compatibles. Estados recibidos:", [...new Set((solicitudes||[]).map(s=>s.estados?.nombre).filter(Boolean))]);
 
   if (!disponibles.length) {
@@ -121,7 +129,7 @@ let MAPA, PROF, MI_UBICACION;
   `).join("");
 
   gsEscucharSolicitudesNuevas((s) => {
-    if (idsServicio.includes(s.id_servicio)) {
+    if (idsServicio.includes(Number(s.id_servicio))) {
       gsToast("Nueva solicitud cercana: " + (s.descripcion || "").slice(0, 40), "info");
     }
   });

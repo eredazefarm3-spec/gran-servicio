@@ -8,6 +8,7 @@
   let sessionInfo = null;
   let channel = null;
   let allMessages = [];
+  const translationAttempted = new Set();
   const t = (key) => window.GS_I18N?.t(key) || key;
   const escape = (s) => typeof gsEscapeHtml === "function" ? gsEscapeHtml(s) : String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
   const targetLang = () => uiLang === "en" ? "EN" : "ES";
@@ -42,11 +43,29 @@
     list.scrollTop = list.scrollHeight;
   }
 
+  async function autoTranslateForeignMessages(messages) {
+    for (const message of messages) {
+      if ((message.idioma_original || "es") === uiLang || message.__translated || translationAttempted.has(message.id_mensaje)) continue;
+      translationAttempted.add(message.id_mensaje);
+      try {
+        message.__translated = await translateText(message.contenido);
+        renderMessages();
+      } catch (error) {
+        const errorBox = $("#gs-chat-error");
+        if (errorBox && !errorBox.textContent) errorBox.textContent = uiLang === "en"
+          ? "Automatic translation is unavailable. Configure the DEEPL_AUTH_KEY secret in Supabase to enable it."
+          : "La traducción automática no está disponible. Configurá el secreto DEEPL_AUTH_KEY en Supabase para habilitarla.";
+        break;
+      }
+    }
+  }
+
   async function loadMessages() {
     const { data, error } = await supabaseClient.from("mensajes_soporte").select("id_mensaje,id_conversacion,remitente_tipo,contenido,fecha_envio,idioma_original").eq("id_conversacion", conversationId).order("fecha_envio", { ascending: true });
     if (error) throw error;
     allMessages = data || [];
     renderMessages();
+    void autoTranslateForeignMessages(allMessages);
   }
 
   async function sendMessage() {
@@ -141,6 +160,7 @@
           allMessages.push(payload.new);
           allMessages.sort((a,b) => new Date(a.fecha_envio)-new Date(b.fecha_envio));
           renderMessages();
+          void autoTranslateForeignMessages([payload.new]);
         }
       }).subscribe();
     $("#gs-chat-send").addEventListener("click", sendMessage);

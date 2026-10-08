@@ -2,9 +2,10 @@
 (function () {
   const supported = ["es", "en"];
   const pathLang = location.pathname.match(/^\/(es|en)(?:\/|$)/)?.[1];
+  const queryLang = new URLSearchParams(location.search).get("lang");
   const saved = (() => { try { return localStorage.getItem("gs-language"); } catch { return null; } })();
   const browser = (navigator.language || "es").toLowerCase().startsWith("en") ? "en" : "es";
-  const lang = supported.includes(pathLang) ? pathLang : (supported.includes(saved) ? saved : browser);
+  const lang = supported.includes(pathLang) ? pathLang : (supported.includes(queryLang) ? queryLang : (supported.includes(saved) ? saved : browser));
   const dictionaries = {
     es: { language: "Idioma", spanish: "Español", english: "Inglés", translate: "Traducir", showOriginal: "Ver original", showTranslation: "Ver traducción", translationError: "No se pudo traducir este mensaje. Intentá de nuevo.", originalLabel: "Mensaje original", translatedLabel: "Traducción automática", sending: "Enviando…", send: "Enviar", writeMessage: "Escribí tu mensaje…", closeConversation: "Esta conversación está cerrada.", translationUnavailable: "La traducción no está configurada todavía." },
     en: { language: "Language", spanish: "Spanish", english: "English", translate: "Translate", showOriginal: "View original", showTranslation: "View translation", translationError: "This message could not be translated. Please try again.", originalLabel: "Original message", translatedLabel: "Automatic translation", sending: "Sending…", send: "Send", writeMessage: "Write your message…", closeConversation: "This conversation is closed.", translationUnavailable: "Translation has not been configured yet." }
@@ -23,7 +24,7 @@
     switcher() {
       const wrap = document.createElement("label");
       wrap.className = "gs-language-switcher";
-      wrap.innerHTML = '<span>🌐</span><select aria-label="' + this.t("language") + '"><option value="es">ES · Español</option><option value="en">EN · English</option></select>';
+      wrap.innerHTML = '<select aria-label="' + this.t("language") + '"><option value="es">ES · Español</option><option value="en">EN · English</option></select>';
       const select = wrap.querySelector("select");
       select.value = lang;
       select.addEventListener("change", () => this.setLanguage(select.value));

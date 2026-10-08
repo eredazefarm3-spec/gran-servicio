@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chat de soporte — Gran Servicio</title>
+<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="../css/gs-polish.css">
+<link rel="stylesheet" href="../css/dashboard.css">
+<link rel="stylesheet" href="../css/dashboard-v2.css">
+<link rel="stylesheet" href="../css/panel-life.css">
+<link rel="stylesheet" href="../css/responsive.css">
+<link rel="stylesheet" href="../css/chat-translation.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar">
+    <a href="../index.html" class="logo"><img src="../img/logo.png" alt="Gran Servicio" class="logo-img"><span>GRAN SERVICIO</span></a>
+    <ul class="sidebar-nav"><li><a href="dashboard.html">Dashboard</a></li><li><a href="mensajes.html" class="active" id="gs-chat-back">Volver a mensajes</a></li></ul>
+    <div class="sidebar-foot"><button class="btn btn-ghost btn-sm" style="color:#CFE0EE" onclick="gsLogout()">Cerrar sesión</button></div>
+  </aside>
+  <main class="app-main">
+    <div class="topbar">
+      <button class="hamburger-menu btn btn-outline btn-sm" onclick="document.getElementById('sidebar').classList.toggle('open')" aria-label="Abrir menú">☰</button>
+      <div></div><div class="topbar-user"><span id="nombre-usuario"></span><div class="avatar" id="avatar-usuario">--</div></div>
+    </div>
+    <div class="main-content">
+      <div class="gs-chat-toolbar"><h2 id="gs-chat-title">Chat de soporte en vivo</h2><div id="gs-chat-language"></div></div>
+      <section class="panel gs-chat" aria-live="polite">
+        <div id="gs-chat-error" class="gs-chat-error" role="status"></div>
+        <div id="gs-chat-messages" class="gs-chat-messages"><div class="gs-chat-empty">Cargando mensajes…</div></div>
+        <div class="gs-chat-compose">
+          <textarea id="gs-chat-input" maxlength="5000" rows="2" placeholder="Escribí tu mensaje…" aria-label="Mensaje"></textarea>
+          <button id="gs-chat-send" class="btn btn-primary" type="button">Enviar</button>
+        </div>
+        <p class="muted" style="margin:0;font-size:12px" id="gs-chat-note">Los mensajes originales se conservan. La traducción depende de la configuración del servicio.</p>
+      </section>
+    </div>
+  </main>
+</div>
+<script src="../js/supabase.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/i18n.js"></script>
+<script src="../js/support-chat.js"></script>
+<script>
+window.addEventListener("DOMContentLoaded", () => {
+  const updateLanguage = () => {
+    const en = window.GS_I18N?.lang === "en";
+    document.documentElement.lang = en ? "en" : "es";
+    const note = document.getElementById("gs-chat-note");
+    if (note) note.textContent = en ? "Original messages are preserved. Translation requires a configured translation service." : "Los mensajes originales se conservan. La traducción depende de la configuración del servicio.";
+    const loading = document.querySelector(".gs-chat-empty");
+    if (loading) loading.textContent = en ? "Loading messages…" : "Cargando mensajes…";
+  };
+  updateLanguage();
+});
+</script>
+</body></html>

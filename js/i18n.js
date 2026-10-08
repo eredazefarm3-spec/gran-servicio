@@ -10,6 +10,20 @@
     es: { language: "Idioma", spanish: "Español", english: "Inglés", translate: "Traducir", showOriginal: "Ver original", showTranslation: "Ver traducción", translationError: "No se pudo traducir este mensaje. Intentá de nuevo.", originalLabel: "Mensaje original", translatedLabel: "Traducción automática", sending: "Enviando…", send: "Enviar", writeMessage: "Escribí tu mensaje…", closeConversation: "Esta conversación está cerrada.", translationUnavailable: "La traducción no está configurada todavía." },
     en: { language: "Language", spanish: "Spanish", english: "English", translate: "Translate", showOriginal: "View original", showTranslation: "View translation", translationError: "This message could not be translated. Please try again.", originalLabel: "Original message", translatedLabel: "Automatic translation", sending: "Sending…", send: "Send", writeMessage: "Write your message…", closeConversation: "This conversation is closed.", translationUnavailable: "Translation has not been configured yet." }
   };
+  function mountGlobalSwitcher() {
+    if (document.getElementById("gs-language") || document.getElementById("gs-chat-language") || document.getElementById("gs-global-language")) return;
+    const mount = () => {
+      if (document.getElementById("gs-language") || document.getElementById("gs-chat-language") || document.getElementById("gs-global-language")) return;
+      const host = document.createElement("div");
+      host.id = "gs-global-language";
+      host.style.cssText = "position:fixed;right:16px;bottom:16px;z-index:9999;background:#fff;padding:8px 10px;border:1px solid #d6dee8;border-radius:10px;box-shadow:0 4px 18px rgba(12,34,56,.14);";
+      host.appendChild(window.GS_I18N.switcher());
+      document.body.appendChild(host);
+    };
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", mount, { once: true });
+    else mount();
+  }
+
   window.GS_I18N = {
     lang,
     t(key) { return dictionaries[lang]?.[key] || dictionaries.es[key] || key; },
@@ -31,4 +45,5 @@
       return wrap;
     }
   };
+  mountGlobalSwitcher();
 })();

@@ -13,8 +13,8 @@
   const escape = (s) => typeof gsEscapeHtml === "function" ? gsEscapeHtml(s) : String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
   const targetLang = () => uiLang === "en" ? "EN" : "ES";
 
-  async function translateText(text) {
-    const { data, error } = await supabaseClient.functions.invoke("gs-translate-message", { body: { text, target_lang: targetLang() } });
+  async function translateMessage(message) {
+    const { data, error } = await supabaseClient.functions.invoke("gs-translate-message", { body: { source: "soporte", message_id: message.id_mensaje, target_lang: targetLang() } });
     if (error) throw error;
     if (!data?.translatedText) throw new Error(data?.error || "Translation unavailable");
     return data.translatedText;
@@ -61,9 +61,9 @@
   }
 
   async function loadMessages() {
-    const { data, error } = await supabaseClient.from("mensajes_soporte").select("id_mensaje,id_conversacion,remitente_tipo,contenido,fecha_envio,idioma_original").eq("id_conversacion", conversationId).order("fecha_envio", { ascending: true });
+    const { data, error } = await supabaseClient.from("mensajes_soporte").select("id_mensaje,id_conversacion,remitente_tipo,contenido,fecha_envio,idioma_original,traduccion_es,traduccion_en").eq("id_conversacion", conversationId).order("fecha_envio", { ascending: true });
     if (error) throw error;
-    allMessages = data || [];
+    allMessages = (data || []).map(m => ({...m, __translated: uiLang === "en" ? (m.traduccion_en || undefined) : (m.traduccion_es || undefined)}));
     renderMessages();
     void autoTranslateForeignMessages(allMessages);
   }
@@ -116,7 +116,7 @@
     button.disabled = true;
     button.textContent = uiLang === "en" ? "Translating…" : "Traduciendo…";
     try {
-      const translated = await translateText(msg.contenido);
+      const translated = await translateMessage(msg);
       msg.__translated = translated;
       translation.hidden = false;
       translation.innerHTML = '<span class="gs-chat-translation-label">' + (uiLang === "en" ? "Automatic translation" : "Traducción automática") + '</span><p>' + escape(translated) + '</p>';

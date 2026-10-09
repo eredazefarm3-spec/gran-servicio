@@ -45,5 +45,5 @@
       return wrap;
     }
   };
-  mountGlobalSwitcher();
+  document.addEventListener("keydown", function (event) {\n    if (event.altKey && event.shiftKey && event.key.toLowerCase() === "l") {\n      const active = document.activeElement;\n      if (active && (active.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(active.tagName))) return;\n      event.preventDefault();\n      window.GS_I18N.setLanguage(lang === "en" ? "es" : "en");\n    }\n  });\n\n  mountGlobalSwitcher();
 })();

@@ -8,8 +8,8 @@
  let session=null, channel=null, messages=[];
  const t=(es,en)=>lang==="en"?en:es;
  const esc=s=>typeof gsEscapeHtml==="function"?gsEscapeHtml(s):String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
- async function translate(text){
-  const {data,error}=await supabaseClient.functions.invoke("gs-translate-message",{body:{text,target_lang:lang==="en"?"EN":"ES"}});
+ async function translate(message){
+  const {data,error}=await supabaseClient.functions.invoke("gs-translate-message",{body:{source:"usuarios",message_id:message.id_mensaje,target_lang:lang==="en"?"EN":"ES"}});
   if(error) throw error;
   if(!data?.translatedText) throw new Error(data?.error||"Translation unavailable");
   return data.translatedText;
@@ -30,13 +30,13 @@
   for(const m of items){
    if((m.idioma_original||"es")===lang||m.__translated||m.__translationTried)continue;
    m.__translationTried=true;
-   try{m.__translated=await translate(m.contenido);render();}
+   try{m.__translated=await translate(m);render();}
    catch(e){$("#gs-chat-error").textContent=t("Traducción automática no disponible. Configurá DEEPL_AUTH_KEY en los secretos de Supabase.","Automatic translation is unavailable. Configure DEEPL_AUTH_KEY in Supabase secrets.");break;}
   }
  }
  async function load(){
-  const {data,error}=await supabaseClient.from("mensajes_usuarios").select("id_mensaje,id_conversacion,remitente_auth_id,remitente_tipo,contenido,idioma_original,fecha_envio").eq("id_conversacion",id).order("fecha_envio",{ascending:true});
-  if(error)throw error;messages=data||[];render();void autoTranslate(messages);
+  const {data,error}=await supabaseClient.from("mensajes_usuarios").select("id_mensaje,id_conversacion,remitente_auth_id,remitente_tipo,contenido,idioma_original,traduccion_es,traduccion_en,fecha_envio").eq("id_conversacion",id).order("fecha_envio",{ascending:true});
+  if(error)throw error;messages=(data||[]).map(m=>({...m,__translated:lang==="en"?(m.traduccion_en||undefined):(m.traduccion_es||undefined)}));render();void autoTranslate(messages);
  }
  async function send(){
   const input=$("#gs-chat-input"),button=$("#gs-chat-send"),text=input.value.trim();
@@ -62,7 +62,7 @@
    const b=e.target.closest("button[data-action]");if(!b)return;
    const m=messages.find(x=>String(x.id_mensaje)===b.dataset.id);const card=b.closest(".gs-chat-message");const body=card.querySelector(".gs-chat-body");
    if(b.dataset.action==="original"){const showing=body.dataset.original==="true";body.textContent=showing?(m.__translated||m.contenido):m.contenido;body.dataset.original=showing?"false":"true";b.textContent=showing?t("Ver original","View original"):t("Ver traducción","View translation");return;}
-   b.disabled=true;try{m.__translated=await translate(m.contenido);body.textContent=m.__translated;body.dataset.original="false";b.textContent=t("Traducido","Translated");}catch(e){$("#gs-chat-error").textContent=t("No se pudo traducir. Verificá la configuración del servicio.","Translation failed. Check provider configuration.");}finally{b.disabled=false;}
+   b.disabled=true;try{m.__translated=await translate(m);body.textContent=m.__translated;body.dataset.original="false";b.textContent=t("Traducido","Translated");}catch(e){$("#gs-chat-error").textContent=t("No se pudo traducir. Verificá la configuración del servicio.","Translation failed. Check provider configuration.");}finally{b.disabled=false;}
   });
  }
  document.addEventListener("DOMContentLoaded",()=>{

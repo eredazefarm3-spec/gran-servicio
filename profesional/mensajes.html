@@ -6,8 +6,8 @@
 <link rel="stylesheet" href="../css/style.css"><link rel="stylesheet" href="../css/gs-polish.css">
 <link rel="stylesheet" href="../css/dashboard.css"><link rel="stylesheet" href="../css/dashboard-v2.css">
 <link rel="stylesheet" href="../css/panel-life.css"><link rel="stylesheet" href="../css/responsive.css">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<link rel="stylesheet" href="../css/life.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script><script src="../js/i18n.js"></script>
+<link rel="stylesheet" href="../css/life.css"><link rel="stylesheet" href="../css/chat-translation.css">
 </head>
 <body>
 <div class="app-shell">
@@ -22,7 +22,7 @@
       <div></div><div class="topbar-user"><span id="nombre-usuario"></span><div class="avatar" id="avatar-usuario">--</div></div>
     </div>
     <div class="main-content">
-      <h2>Mensajes</h2>
+      <div class="gs-chat-toolbar"><h2 id="gs-messages-title">Mensajes</h2><div id="gs-language"></div></div>
       <div id="contenido-pagina" class="panel"><div class="loading-state"><div class="spinner"></div>Cargando…</div></div>
     </div>
   </main>
@@ -41,16 +41,16 @@
 </script>
 <script>
 window.addEventListener("gs-sesion-lista", async () => {
-  const { perfil } = window.SESION;
-  const { data } = await supabaseClient.from("conversaciones_soporte")
-    .select("fecha_inicio, estados(nombre), usuario_empleado(nombre)")
-    .eq("id_profesional", perfil.id_profesional).order("fecha_inicio",{ascending:false});
-  document.getElementById("contenido-pagina").innerHTML = (data && data.length) ? data.map(c=>`
-    <div class="list-row"><div><strong>Conversación con soporte</strong>
-    <p class="muted" style="margin:2px 0">${gsEscapeHtml(c.usuario_empleado?.nombre ? "Atendido por "+c.usuario_empleado.nombre : "Esperando asignación")}</p></div>
-    <span class="badge badge-neutro">${gsEscapeHtml(c.estados?.nombre||"—")}</span></div>`).join("")
-    : '<div class="empty-state">No tenés conversaciones de soporte activas.</div>';
+ const {perfil}=window.SESION;
+ const [{data:soporte},{data:chats}]=await Promise.all([
+  supabaseClient.from("conversaciones_soporte").select("id_conversacion,fecha_inicio,estados(nombre),usuario_empleado(nombre)").eq("id_profesional",perfil.id_profesional).order("fecha_inicio",{ascending:false}),
+  supabaseClient.from("conversaciones_usuarios").select("id_conversacion,creado_en,ultima_actividad,usuario_cliente(nombre,apellido)").eq("id_profesional",perfil.id_profesional).order("ultima_actividad",{ascending:false})
+ ]);
+ const items=[];
+ (chats||[]).forEach(c=>items.push('<div class="list-row"><div><strong>'+gsEscapeHtml((c.usuario_cliente?.nombre||"")+" "+(c.usuario_cliente?.apellido||""))+'</strong><p class="muted">Chat con cliente</p></div><a class="btn btn-primary btn-sm" href="chat-cliente.html?id='+encodeURIComponent(c.id_conversacion)+'&lang='+(window.GS_I18N?.lang||"es")+'">'+(window.GS_I18N?.lang==="en"?"Open chat":"Abrir chat")+'</a></div>'));
+ (soporte||[]).forEach(c=>items.push('<div class="list-row"><div><strong>Conversación con soporte</strong><p class="muted">'+gsEscapeHtml(c.usuario_empleado?.nombre?"Atendido por "+c.usuario_empleado.nombre:"Esperando asignación")+'</p></div><span class="badge badge-neutro">'+gsEscapeHtml(c.estados?.nombre||"—")+'</span><a class="btn btn-primary btn-sm" href="chat-soporte.html?id='+encodeURIComponent(c.id_conversacion)+'&lang='+(window.GS_I18N?.lang||"es")+'">'+(window.GS_I18N?.lang==="en"?"Open chat":"Abrir chat")+'</a></div>'));
+ document.getElementById("contenido-pagina").innerHTML=items.join("")||'<div class="empty-state">No tenés conversaciones todavía.</div>';
 });
 </script>
-<script src="../js/panel-life.js"></script><script src="../js/life.js"></script>
+<script>window.addEventListener("DOMContentLoaded",()=>{const lang=window.GS_I18N?.lang||"es";const host=document.getElementById("gs-language");if(host&&window.GS_I18N)host.appendChild(GS_I18N.switcher());if(lang==="en"){document.documentElement.lang="en";document.title="Messages — Gran Servicio";document.getElementById("gs-messages-title").textContent="Messages";}});</script><script src="../js/panel-life.js"></script><script src="../js/life.js"></script>
 </body></html>

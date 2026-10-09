@@ -6,8 +6,8 @@
 <link rel="stylesheet" href="../css/style.css"><link rel="stylesheet" href="../css/gs-polish.css">
 <link rel="stylesheet" href="../css/dashboard.css"><link rel="stylesheet" href="../css/dashboard-v2.css">
 <link rel="stylesheet" href="../css/panel-life.css"><link rel="stylesheet" href="../css/responsive.css">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<link rel="stylesheet" href="../css/life.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script><script src="../js/i18n.js"></script>
+<link rel="stylesheet" href="../css/life.css"><link rel="stylesheet" href="../css/chat-translation.css">
 </head>
 <body>
 <div class="app-shell">
@@ -22,7 +22,7 @@
       <div></div><div class="topbar-user"><span id="nombre-usuario"></span><div class="avatar" id="avatar-usuario">--</div></div>
     </div>
     <div class="main-content">
-      <h2>Mensajes</h2>
+      <div class="gs-chat-toolbar"><h2 id="gs-messages-title">Mensajes</h2><div id="gs-language"></div></div><section class="panel" style="margin-bottom:16px"><h3 id="gs-new-chat-title">Iniciar chat con un profesional</h3><div style="display:flex;gap:10px;flex-wrap:wrap"><select id="gs-professional-select" aria-label="Profesional" style="flex:1;min-width:220px;padding:10px;border:1px solid #cbd5e1;border-radius:8px"><option value="">Cargando profesionales…</option></select><button id="gs-start-chat" class="btn btn-primary" type="button">Iniciar conversación</button></div><p id="gs-start-chat-error" class="gs-chat-error" role="status"></p></section>
       <div id="contenido-pagina" class="panel"><div class="loading-state"><div class="spinner"></div>Cargando…</div></div>
     </div>
   </main>
@@ -42,16 +42,30 @@
 </script>
 <script>
 window.addEventListener("gs-sesion-lista", async () => {
-  const { perfil } = window.SESION;
-  const { data } = await supabaseClient.from("conversaciones_soporte")
-    .select("id_conversacion, fecha_inicio, estados(nombre), usuario_empleado(nombre)")
-    .eq("id_cliente", perfil.id_cliente).order("fecha_inicio", { ascending:false });
-  document.getElementById("contenido-pagina").innerHTML = (data && data.length) ? data.map(c => `
-    <div class="list-row"><div><strong>Conversación con soporte</strong>
-    <p class="muted" style="margin:2px 0">${gsEscapeHtml(c.usuario_empleado?.nombre ? "Atendido por "+c.usuario_empleado.nombre : "Esperando asignación")}</p></div>
-    <span class="badge badge-neutro">${gsEscapeHtml(c.estados?.nombre||"—")}</span></div>`).join("")
-    : '<div class="empty-state">No tenés conversaciones de soporte activas.</div>';
+ const {perfil}=window.SESION;
+ const select=document.getElementById("gs-professional-select");
+ const {data:pros,error:proError}=await supabaseClient.from("usuario_profesional").select("id_profesional,nombre,apellido").eq("activo",true).eq("verificado",true).eq("estado_aprobacion","aprobado").order("nombre");
+ select.innerHTML='<option value="">'+(window.GS_I18N?.lang==="en"?"Select a professional":"Seleccioná un profesional")+'</option>';
+ (pros||[]).forEach(p=>{const o=document.createElement("option");o.value=p.id_profesional;o.textContent=p.nombre+" "+p.apellido;select.appendChild(o);});
+ if(proError)document.getElementById("gs-start-chat-error").textContent="No se pudieron cargar los profesionales.";
+ document.getElementById("gs-start-chat").addEventListener("click",async()=>{
+  const idProfesional=Number(select.value),errorBox=document.getElementById("gs-start-chat-error");
+  if(!idProfesional){errorBox.textContent=window.GS_I18N?.lang==="en"?"Choose a professional first.":"Elegí un profesional primero.";return;}
+  const button=document.getElementById("gs-start-chat");button.disabled=true;
+  try{const {data,error}=await supabaseClient.from("conversaciones_usuarios").insert({id_cliente:perfil.id_cliente,id_profesional:idProfesional}).select("id_conversacion").single();
+   if(error)throw error;location.href="chat-profesional.html?id="+encodeURIComponent(data.id_conversacion)+"&lang="+(window.GS_I18N?.lang||"es");
+  }catch(e){errorBox.textContent=e.code==="23505"?(window.GS_I18N?.lang==="en"?"A conversation already exists for this selection.":"Ya existe una conversación para esta selección."):(e.message||"No se pudo iniciar el chat.");}
+  finally{button.disabled=false;}
+ });
+ const [{data:soporte},{data:chats}]=await Promise.all([
+  supabaseClient.from("conversaciones_soporte").select("id_conversacion,fecha_inicio,estados(nombre),usuario_empleado(nombre)").eq("id_cliente",perfil.id_cliente).order("fecha_inicio",{ascending:false}),
+  supabaseClient.from("conversaciones_usuarios").select("id_conversacion,creado_en,ultima_actividad,usuario_profesional(nombre,apellido)").eq("id_cliente",perfil.id_cliente).order("ultima_actividad",{ascending:false})
+ ]);
+ const items=[];
+ (chats||[]).forEach(c=>items.push('<div class="list-row"><div><strong>'+gsEscapeHtml((c.usuario_profesional?.nombre||"")+" "+(c.usuario_profesional?.apellido||""))+'</strong><p class="muted">Chat con profesional</p></div><a class="btn btn-primary btn-sm" href="chat-profesional.html?id='+encodeURIComponent(c.id_conversacion)+'&lang='+(window.GS_I18N?.lang||"es")+'">'+(window.GS_I18N?.lang==="en"?"Open chat":"Abrir chat")+'</a></div>'));
+ (soporte||[]).forEach(c=>items.push('<div class="list-row"><div><strong>Conversación con soporte</strong><p class="muted">'+gsEscapeHtml(c.usuario_empleado?.nombre?"Atendido por "+c.usuario_empleado.nombre:"Esperando asignación")+'</p></div><span class="badge badge-neutro">'+gsEscapeHtml(c.estados?.nombre||"—")+'</span><a class="btn btn-primary btn-sm" href="chat-soporte.html?id='+encodeURIComponent(c.id_conversacion)+'&lang='+(window.GS_I18N?.lang||"es")+'">'+(window.GS_I18N?.lang==="en"?"Open chat":"Abrir chat")+'</a></div>'));
+ document.getElementById("contenido-pagina").innerHTML=items.join("")||'<div class="empty-state">No tenés conversaciones todavía.</div>';
 });
 </script>
-<script src="../js/panel-life.js"></script><script src="../js/life.js"></script>
+<script>window.addEventListener("DOMContentLoaded",()=>{const lang=window.GS_I18N?.lang||"es";const host=document.getElementById("gs-language");if(host&&window.GS_I18N)host.appendChild(GS_I18N.switcher());if(lang==="en"){document.documentElement.lang="en";document.title="Messages — Gran Servicio";document.getElementById("gs-messages-title").textContent="Messages";}});</script><script src="../js/panel-life.js"></script><script src="../js/life.js"></script>
 </body></html>
